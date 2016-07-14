@@ -152,6 +152,9 @@ if (NOT DEFINED CMAKE_IOS_SDK_ROOT)
 endif (NOT DEFINED CMAKE_IOS_SDK_ROOT)
 set (CMAKE_IOS_SDK_ROOT ${CMAKE_IOS_SDK_ROOT} CACHE PATH "Location of the selected iOS SDK")
 
+# Set system include/library path
+set (CMAKE_CXX_FLAGS_INIT "${CMAKE_CXX_FLAGS_INIT} -I${CMAKE_IOS_SDK_ROOT}/usr/include")
+
 # Set the sysroot default to the most recent SDK
 set (CMAKE_OSX_SYSROOT ${CMAKE_IOS_SDK_ROOT} CACHE PATH "Sysroot used for iOS support")
 
