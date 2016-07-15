@@ -1,7 +1,7 @@
 #include <cstdio>
 #include "patricia.h"
 
-struct traverse_testcase {
+struct testcase {
 	struct operation {
 		const char *type;
 		const char *data;
@@ -33,6 +33,9 @@ struct traverse_testcase {
 		auto expects = expects_;
 		int c = 0;
 		if (!p.traverse([&c, &expects] (shutup::Patricia::NodeData *n, int depth) -> bool {
+			if (expects.size() <= c) {
+				return false;
+			}
 			auto e = expects[c++];
 			return e.depth == depth && 
 				std::strlen(e.data) == n->len() && 
@@ -66,7 +69,12 @@ struct traverse_testcase {
 };
 
 extern const char *patricia_test() {
-	std::vector<traverse_testcase> cases{
+	std::vector<testcase> cases{
+		{
+			.message_ = "empty",
+			.operations_ = {},
+			.expects_ = {},
+		},
 		{
 			.message_ = "simple insert",
 			.operations_ = {{"+", "goge"}, {"+", "hoge"}},
@@ -90,7 +98,50 @@ extern const char *patricia_test() {
 				.found = {"hoge", "hogi"}, 
 				.not_found = {"hog", "e", "i"},
 			},
-		}
+		},
+		{
+			.message_ = "insert + remove",
+			.operations_ = {{"+", "abcdef"}, {"-", "abcdef"}},
+			.expects_ = {},
+			.search_ = {
+				.not_found = {"abcdef"},
+			},
+		},
+		{
+			.message_ = "insert + remove not exists",
+			.operations_ = {{"+", "abcdef"}, {"-", "abcdee"}},
+			.expects_ = {
+				{"abcdef", 1}
+			},
+			.search_ = {
+				.found = {"abcdef"},
+				.not_found = {"abcdee"},
+			},
+		},
+		{
+			.message_ = "insert + remove not exists (no terminate)",
+			.operations_ = {{"+", "hogi"}, {"+", "hoge"}, {"-", "hog"}},
+			.expects_ = {
+				{"hog", 1},
+					{"e", 2},
+					{"i", 2},
+			},
+			.search_ = {
+				.found = {"hoge", "hogi"}, 
+				.not_found = {"hog", "e", "i"},
+			},
+		},
+		{
+			.message_ = "insert + remove cause merge",
+			.operations_ = {{"+", "hogi"}, {"+", "hoge"}, {"-", "hoge"}},
+			.expects_ = {
+				{"hogi", 1},
+			},
+			.search_ = {
+				.found = {"hogi"}, 
+				.not_found = {"hoge", "hog", "e", "i"},
+			},
+		},
 	};
 	for (auto &c : cases) {
 		std::printf("patricia_test %s\n", c.message_);

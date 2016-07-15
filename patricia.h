@@ -13,21 +13,24 @@ namespace shutup {
 class Patricia {
 	class Node {
 	public:
+		typedef std::vector<Node*, allocator<Node*>> NodeList;
 		Node *parent_;
-		std::vector<Node*, allocator<Node*>> children_;
+		NodeList children_;
 		int len_;
 		u8 bytes_[0];
-		Node(allocator<Node*> &a, Node *p, const u8 *b, int l) : parent_(p), children_(a) {
+		inline Node(allocator<Node*> &a, Node *p, const u8 *b, int l) : parent_(p), children_(a) {
 			std::memcpy(bytes_, b, l);
 			len_ = l;
 		}
-		Node(allocator<Node*> &a) : parent_(nullptr), children_(a), len_(0) {} //for creating root node
-		~Node() {} 
+		inline Node(allocator<Node*> &a) : parent_(nullptr), children_(a), len_(0) {} //for creating root node
+		inline ~Node() {} 
+		void merge(allocator<Node*> &a, Node *with);
 		void destroy(allocator<Node*> &a);
 		void add_child(allocator<Node*> &a, const u8 *b, int l);
 		Node *find_child(imatcher &m, const u8 *b, int l, int *ofs);
 		static bool compare(const Node *left, const Node *right);
 		void sort_children();
+		void remove_self(allocator<Node*> &a);
 		//inlines
 		inline void free(allocator<Node*> &a) { 
 			operator delete(this, this);
@@ -54,7 +57,7 @@ public:
 	inline Patricia(imatcher *mch, imempool *m) : matcher_(mch), alloc_(m), root_(Node::new_root(alloc_)) {}
 	~Patricia();
 	void add_slice(const u8 *b, int l);
-	void remove_slice(const u8 *b, int l) {}
+	void remove_slice(const u8 *b, int l);
 	bool contains(const u8 *b, int l, int *ofs);
 	//inlines
 	inline void add(const char *s) { add_slice(reinterpret_cast<const u8*>(s), std::strlen(s)); }

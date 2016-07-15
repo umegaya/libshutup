@@ -6,6 +6,21 @@
 
 namespace shutup {
 //Patricia::Node
+void Patricia::Node::merge(allocator<Node*> &a, Node *n) {
+	//create merged node
+	Node *merged = Node::new_node(a, parent_, bytes_, len_ + n->len_);
+	std::memcpy(merged->bytes_ + len_, n->bytes_, n->len_);
+	//replace self with merged node in siblings
+	NodeList &siblings = parent_->children_;
+	for (auto iter = siblings.begin(); iter != siblings.end(); iter++) {
+		if (*iter == this) {
+			siblings.erase(iter);
+			break;
+		}
+	}
+	siblings.push_back(merged);
+	parent_->sort_children();
+}
 void Patricia::Node::destroy(allocator<Node*> &a) {
 	for (Node *child : children_) {
 		child->destroy(a);
@@ -13,8 +28,8 @@ void Patricia::Node::destroy(allocator<Node*> &a) {
 	free(a);
 }
 void Patricia::Node::add_child(allocator<Node*> &a, const u8 *b, int l) {
-	int index = 0;
-	for (Node *child : children_) {
+	for (auto iter = children_.begin(); iter != children_.end(); iter++) {
+		Node *child = *iter;
 		// == はないはず（あるならこのノードではなくその子供への追加になっているはず)
 		if (child->bytes_[0] == b[0]) {
 			for (int i = 1; i < child->len_; i++) {
@@ -32,12 +47,12 @@ void Patricia::Node::add_child(allocator<Node*> &a, const u8 *b, int l) {
 				Node *b1 = Node::new_node(a, t, child->bytes_ + i, child->len_ - i);
 				Node *b2 = Node::new_node(a, t, b + i, l - i);
 				//このchildを取り除く.全てのリンクはまだ生きている.
-				children_.erase(children_.begin() + index);
+				children_.erase(iter);
 				//b1に今のchildのchild_を全部くっつける.
 				for (Node *n : children_) {
 					n->parent_ = b1; //parentをb1にとっかえる.
 				}
-				b1->children_ = child->children_; //moveしてくれるので大丈夫なはず.
+				b1->children_ = child->children_; //moveしてくれるのでcopy発生しないはず.
 				//tにb1, b2を追加する.
 				t->children_.push_back(b1);
 				t->children_.push_back(b2);
@@ -50,7 +65,6 @@ void Patricia::Node::add_child(allocator<Node*> &a, const u8 *b, int l) {
 				return;
 			}
 		}
-		index++;
 	}
 	//全く一致するchildがなかったので新しく追加する.
 	children_.push_back(Node::new_node(a, this, b, l));
@@ -75,16 +89,45 @@ Patricia::Node *Patricia::Node::find_child(imatcher &m, const u8 *b, int l, int 
 	}
 	return nullptr;
 }
+void Patricia::Node::remove_self(allocator<Node*> &a) {
+	if (root()) {
+		//rootノードは除去できない.
+		return;
+	}
+	NodeList &siblings = parent_->children_;
+	for (auto iter = siblings.begin(); iter != siblings.end(); iter++) {
+		if (this == *iter) {
+			siblings.erase(iter);
+			break;
+		}
+	}
+	//親がrootの場合はただ取り除かれるだけとなる(分岐していないから).
+	if (siblings.size() == 1 && !parent_->root()) {
+		//merge this child node with parent.
+		parent_->merge(a, siblings[0]);
+	}
+}
 //Patricia
 Patricia::~Patricia() {
 	root_->destroy(alloc_);
+	root_ = nullptr;
 }
 void Patricia::add_slice(const u8 *b, int l) {
 	int ofs;
 	Node *n = find_node(b, l, &ofs);
 	if (ofs < l) {
-		//ノードが見つからなかった.[0, l)までの値がofsに入っている.残りの部分を木構造に追加する.
+		//ノードに含まれているsliceによって被覆されなかった残りの部分を木構造に追加する.
 		n->add_child(alloc_, b + ofs, l - ofs);
+	}
+}
+void Patricia::remove_slice(const u8 *b, int l) {
+	int ofs;
+	Node *n = find_node(b, l, &ofs);
+	if (ofs < l || !n->terminal()) {
+		//ノードが見つからなかった.
+		return;
+	} else {
+		n->remove_self(alloc_);
 	}
 }
 //b, lを含むtrie木の「パス」の最後のノードを見つける.その場合にパスを通る間に何バイトが取り除かれたかを*ofsに返す
