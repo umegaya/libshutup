@@ -6,15 +6,6 @@ struct traverse_testcase {
 	std::vector<const char *> inserts_;
 	std::vector<const char *> results_;
 	//test routine
-	void dump_tree(shutup::Patricia &p) {
-		p.traverse([] (shutup::Patricia::ExportNode *n) -> bool {
-			char buffer[256];
-			std::memcpy(buffer, n->bytes(), n->len());
-			buffer[n->len()] = 0;
-			std::printf("key:%s\n", buffer);
-			return true;
-		});
-	}
 	bool test() {
 		shutup::Patricia p;
 		for (auto i : inserts_) {
@@ -22,14 +13,18 @@ struct traverse_testcase {
 		}
 		auto results = results_;
 		int c = 0;
-		if (!p.traverse([&c, &results] (shutup::Patricia::ExportNode *n) -> bool {
+		if (!p.traverse([&c, &results] (shutup::Patricia::NodeData *n, int depth) -> bool {
 			auto s = results[c++];
 			return std::strlen(s) == n->len() && memcmp(s, n->bytes(), n->len()) == 0;
 		})) {
-			dump_tree(p);		
+			p.dump();
 			return false;
 		};
-		dump_tree(p);
+		if (c != results.size()) {
+			p.dump();
+			return false;
+		}
+		p.dump();
 		return true;		
 	}
 };

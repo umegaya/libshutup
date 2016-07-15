@@ -8,7 +8,7 @@ int main(int argc, char *argv[]) {
 		const char *name;
 		const char *(*proc)();
 	} tests[] = {
-		"patricia", patricia_test,
+		{"patricia", patricia_test},
 	};
 	for (int i = 0; i < (int)(sizeof(tests)/sizeof(tests[0])); i++) {
 		if (argc <= 1 || std::strcmp(argv[1], tests[i].name) == 0) {

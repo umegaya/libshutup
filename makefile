@@ -2,6 +2,9 @@
 test: testlib
 	make -C test run
 
+debug: 
+	lldb test/build/t
+
 testlib:
 	- mkdir build.testlib
 	cd build.testlib && cmake -DCMAKE_TOOLCHAIN_FILE=../toolchain/testlib.cmake .. && make
@@ -23,7 +26,7 @@ android:
 	cd build.android && cmake -DCMAKE_TOOLCHAIN_FILE=../toolchain/android.cmake .. && make	
 
 clean:
-	rm -rf build build.android build.ios build.bundle
+	rm -rf build build.android build.ios build.bundle build.testlib
 
 all: lib bundle android ios
 

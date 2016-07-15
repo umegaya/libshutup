@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.0)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+if (DEBUG)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall -DDEBUG")
+endif()	
 if (OSXBUNDLE)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -bundle")
 	add_executable(shutup MACOSX_BUNDLE lib.cpp patricia.cpp) 

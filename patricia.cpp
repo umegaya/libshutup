@@ -1,5 +1,9 @@
 #include "patricia.h"
 
+#if defined(DEBUG)
+#include <cstdio>
+#endif
+
 namespace shutup {
 //Patricia::Node
 void Patricia::Node::destroy(allocator<Node*> &a) {
@@ -9,7 +13,6 @@ void Patricia::Node::destroy(allocator<Node*> &a) {
 	free(a);
 }
 void Patricia::Node::add_child(allocator<Node*> &a, const u8 *b, int l) {
-	imempool &m = a.pool();
 	int index = 0;
 	for (Node *child : children_) {
 		// == はないはず（あるならこのノードではなくその子供への追加になっているはず)
@@ -25,9 +28,9 @@ void Patricia::Node::add_child(allocator<Node*> &a, const u8 *b, int l) {
 				//TODO: 元データをshared_ptrとして扱って複数ノードで共有し、ofsとlenをviewとして各ノードに持たせることでmallocの回数をb[i + 1:]のための１回に減らせるだろう.
 				//ただし、ノードを削除する際にNodeをparentにさかのぼってunref的なことをする必要があるため削除のパフォーマンスは低下するかも
 				//いずれにせよ相当数のノードがないと効果は実感できないだろうと考えられるためTODOとしている.
-				Node *t = new(m.malloc(i)) Node(a, this, b, i); //childとb, lの共通部分.
-				Node *b1 = new(m.malloc(child->len_ - i)) Node(a, t, child->bytes_ + i, child->len_ - i);
-				Node *b2 = new(m.malloc(l - i)) Node(a, t, b + i, l - i);
+				Node *t = Node::new_node(a, this, b, i); //childとb, lの共通部分.
+				Node *b1 = Node::new_node(a, t, child->bytes_ + i, child->len_ - i);
+				Node *b2 = Node::new_node(a, t, b + i, l - i);
 				//このchildを取り除く.全てのリンクはまだ生きている.
 				children_.erase(children_.begin() + index);
 				//b1に今のchildのchild_を全部くっつける.
@@ -50,7 +53,7 @@ void Patricia::Node::add_child(allocator<Node*> &a, const u8 *b, int l) {
 		index++;
 	}
 	//全く一致するchildがなかったので新しく追加する.
-	children_.push_back(new (m.malloc(l)) Node(a, this, b, l));
+	children_.push_back(Node::new_node(a, this, b, l));
 }
 bool Patricia::Node::compare(const Node *left, const Node *right) {
 	int l = std::min(left->len_, right->len_);
@@ -104,11 +107,27 @@ bool Patricia::contains(const u8 *b, int l, int *ofs) {
 	Node *n = find_node(b, l, ofs);
 	return n->terminal();
 }
-bool Patricia::traverse(Node *cur, std::function<bool(Node*)> iter) {
-	if (!iter(cur)) { return false; }
+bool Patricia::traverse(Node *cur, int depth, std::function<bool(Node*, int)> iter) {
+	if (!iter(cur, depth)) { return false; }
 	for (Node *n : cur->children_) {
-		if (!traverse(n, iter)) { return false; }
+		if (!traverse(n, depth + 1, iter)) { return false; }
 	}
 	return true;
 }
+#if defined(DEBUG)
+void Patricia::dump() {
+	std::printf("dump patricia tree at %p\n", this);
+	std::printf("[*root*]\n");
+	traverse([] (shutup::Patricia::NodeData *n, int depth) -> bool {
+		char buffer[256];
+		std::memcpy(buffer, n->bytes(), n->len());
+		buffer[n->len()] = 0;
+		for (int i = 0; i < depth; i++) { std::putc('\t', stdout); }
+		std::printf("[%s]\n", buffer);
+		return true;
+	});
 }
+#else
+void Patricia::dump() {}
+#endif
+} //namespace shutup
