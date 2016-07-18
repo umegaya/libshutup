@@ -16,13 +16,14 @@ class Patricia {
 		typedef std::vector<Node*, allocator<Node*>> NodeList;
 		Node *parent_;
 		NodeList children_;
+		bool term_;
 		int len_;
 		u8 bytes_[0];
-		inline Node(allocator<Node*> &a, Node *p, const u8 *b, int l) : parent_(p), children_(a) {
+		inline Node(allocator<Node*> &a, Node *p, const u8 *b, int l, bool term) : parent_(p), children_(a), term_(term) {
 			std::memcpy(bytes_, b, l);
 			len_ = l;
 		}
-		inline Node(allocator<Node*> &a) : parent_(nullptr), children_(a), len_(0) {} //for creating root node
+		inline Node(allocator<Node*> &a) : parent_(nullptr), children_(a), term_(false), len_(0) {} //for creating root node
 		inline ~Node() {} 
 		void merge(allocator<Node*> &a, Node *with);
 		void destroy(allocator<Node*> &a);
@@ -31,18 +32,19 @@ class Patricia {
 		static bool compare(const Node *left, const Node *right);
 		void sort_children();
 		void remove_self(allocator<Node*> &a);
+		void remove_from_siblings();
+		void dump() const;
 		//inlines
 		inline void free(allocator<Node*> &a) { 
 			operator delete(this, this);
 			a.pool().free(this);
 		}
-		inline bool terminal() const { return children_.size() == 0; }
+		inline bool terminal() const { return term_; }
 		inline bool root() const { return parent_ == nullptr; }
-		void dump() const;
 		static inline void *operator new(std::size_t, void *buf) { return buf; }
 		static inline void operator delete(void *p, void *buf) {}
-		static inline Node *new_node(allocator<Node*> &a, Node *parent, const u8 *b, int l) {
-			return new(a.pool().malloc(sizeof(Node) + l)) Node(a, parent, b, l);
+		static inline Node *new_node(allocator<Node*> &a, Node *parent, const u8 *b, int l, bool term) {
+			return new(a.pool().malloc(sizeof(Node) + l)) Node(a, parent, b, l, term);
 		}
 		static inline Node *new_root(allocator<Node*> &a) {
 			return new(a.pool().malloc(sizeof(Node))) Node(a);
@@ -68,10 +70,11 @@ protected:
 	bool traverse(Node *n, int depth, std::function<bool(Node*, int)> iter);
 #if defined(TEST)
 public:
-	class NodeData : public Node {
+	class NodeData : protected Node {
 	public:
 		int len() const { return len_; }
 		const u8 *bytes() const { return bytes_; }
+		bool terminal() const { return term_; }
 	};
 	//test helpers
 	inline bool traverse(std::function<bool(NodeData*, int)> iter) { 
