@@ -11,7 +11,7 @@ void Patricia::Node::merge(allocator<Node*> &a, Node *n) {
 		return;
 	}
 	//create merged node (マージされる時、必ず終端ノードとなる)
-	Node *merged = Node::new_node(a, parent_, bytes_, len_ + n->len_, true);
+	Node *merged = Node::new_node(a, parent_, bytes_, len_ + n->len_, n->param_);
 	std::memcpy(merged->bytes_ + len_, n->bytes_, n->len_);
 	//nに子供があればmergedに付け直す.
 	if (n->children_.size() > 0) {
@@ -34,10 +34,10 @@ void Patricia::Node::destroy(allocator<Node*> &a) {
 	}
 	free(a);
 }
-void Patricia::Node::add_child(allocator<Node*> &a, IMatcher &m, const u8 *b, int l) {
+void Patricia::Node::add_child(allocator<Node*> &a, IMatcher &m, const u8 *b, int l, void *p) {
 	if (l == 0) {
-		//l == 0でここに来るということは,このノード自身とマッチしているということなので、_termをtrueにする. 
-		term_ = true;
+		//l == 0でここに来るということは,このノード自身とマッチしているということなので、param_を設定する.
+		param_ = p;
 		return; 
 	}
 	for (auto iter = children_.begin(); iter != children_.end(); iter++) {
@@ -57,23 +57,23 @@ void Patricia::Node::add_child(allocator<Node*> &a, IMatcher &m, const u8 *b, in
 			//終端となった場合、長さ0のデータを含むノードは作成しない
 			if (i < ofs) {
 				term = (child->len_ == i);
-				r = Node::new_node(a, this, child->bytes_, i, term);
-				b1 = Node::new_node(a, r, b + ofs, l - ofs, true);
+				r = Node::new_node(a, this, child->bytes_, i, term ? child->param_ : nullptr);
+				b1 = Node::new_node(a, r, b + ofs, l - ofs, p);
 				if (term) {
 					//b2が作成されないため、rを子供を引き継ぐノードにする.
 					new_parent = r;
 				} else {
-					b2 = Node::new_node(a, r, child->bytes_ + i, child->len_ - i, true);
+					b2 = Node::new_node(a, r, child->bytes_ + i, child->len_ - i, child->param_);
 					new_parent = b2;
 				}
 			} else {
 				term = (l == ofs);
-				r = Node::new_node(a, this, b, ofs, term);
-				b1 = Node::new_node(a, r, child->bytes_ + i, child->len_ - i, true);
+				r = Node::new_node(a, this, b, ofs, term ? p : nullptr);
+				b1 = Node::new_node(a, r, child->bytes_ + i, child->len_ - i, child->param_);
 				//b1は必ず作成される(l == ofs かつ len_ == iなら一致してしまうため、このようなことは発生しない)
 				new_parent = b1;
 				if (!term) {
-					b2 = Node::new_node(a, r, b + ofs, l - ofs, true);
+					b2 = Node::new_node(a, r, b + ofs, l - ofs, p);
 				}
 			}
 			//このchildを取り除く.全てのリンクはまだ生きている.
@@ -98,7 +98,7 @@ void Patricia::Node::add_child(allocator<Node*> &a, IMatcher &m, const u8 *b, in
 		}
 	}
 	//全く一致するchildがなかったので新しく追加する.このノードは終端となる.
-	children_.push_back(Node::new_node(a, this, b, l, true));
+	children_.push_back(Node::new_node(a, this, b, l, p));
 }
 bool Patricia::Node::compare(const Node *left, const Node *right) {
 	int l = std::min(left->len_, right->len_);
@@ -170,7 +170,7 @@ void Patricia::Node::remove_self(allocator<Node*> &a) {
 		destroy(a);
 	} else if (terminal()) {
 		//子供を持つ場合で終端ノードの場合.
-		term_ = false; //終端ノードではなくなるだけ.(子供があるため削除できない).
+		param_ = nullptr; //終端ノードではなくなるだけ.(子供があるため削除できない).
 		if (sz == 1) {
 			//- このノードが1つの子供を持つ場合で、終端ノードだった => このノードと子供をマージしてparent_に追加する.
 			// eg) +ab +abc +abcd -ab => abc
@@ -185,16 +185,20 @@ void Patricia::Node::remove_self(allocator<Node*> &a) {
 	}
 }
 //Patricia
+void *Patricia::DEFAULT_PARAM_PTR = reinterpret_cast<void *>(0xdeadbeef);
 Patricia::~Patricia() {
 	root_->destroy(alloc_);
 	root_ = nullptr;
 }
-void Patricia::add_slice(const u8 *b, int l) {
+void Patricia::add_slice(const u8 *b, int l, void *p) {
+	if (p == nullptr) {
+		p = DEFAULT_PARAM_PTR;
+	}
 	int ofs;
 	Node *n = find_node(b, l, &ofs);
 	if (ofs <= l) {
 		//ノードに含まれているsliceによって被覆されなかった残りの部分を木構造に追加する.
-		n->add_child(alloc_, *matcher_, b + ofs, l - ofs);
+		n->add_child(alloc_, *matcher_, b + ofs, l - ofs, p);
 	}
 }
 void Patricia::remove_slice(const u8 *b, int l) {
@@ -223,9 +227,9 @@ Patricia::Node *Patricia::find_node(const u8 *b, int l, int *ofs) {
 	return cur;
 }
 //見つかったノードが子供を持たない or 見つかったノードの時点でlが全て被覆されている場合.
-bool Patricia::contains(const u8 *b, int l, int *ofs) {
+void *Patricia::get(const u8 *b, int l, int *ofs) {
 	Node *n = find_node(b, l, ofs);
-	return n->terminal();
+	return n->param_;
 }
 bool Patricia::traverse(Node *cur, int depth, std::function<bool(Node*, int)> iter) const {
 	if (!iter(cur, depth)) { return false; }
