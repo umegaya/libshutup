@@ -64,7 +64,7 @@ public:
 	inline void add(const char *s) { add_slice(reinterpret_cast<const u8*>(s), std::strlen(s)); }
 	inline void remove(const char *s) { remove_slice(reinterpret_cast<const u8*>(s), std::strlen(s)); }
 	inline bool contains(const char *s, int *ofs) { return contains(reinterpret_cast<const u8*>(s), std::strlen(s), ofs); }
-	void dump();
+	void dump() const;
 protected:
 	Node *find_node(const u8 *b, int l, int *ofs);
 	bool traverse(Node *n, int depth, std::function<bool(Node*, int)> iter);

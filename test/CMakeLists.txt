@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -g -Wall")
 link_directories(../build.testlib)
-include_directories(..)
+include_directories(../src)
 add_definitions(-DTEST -DDEBUG)
 add_executable(t main.cpp patricia.cpp) 
 target_link_libraries(t shutup)

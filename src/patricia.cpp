@@ -241,7 +241,7 @@ void Patricia::Node::dump() const {
 	buffer[len_] = 0;
 	std::printf("node:%p[%s]%s:%d:%lu\n", this, buffer, terminal() ? "t" : "-", len_, children_.size());
 }
-void Patricia::dump() {
+void Patricia::dump() const {
 	std::printf("dump patricia tree at %p\n", this);
 	std::printf("[*root*]\n");
 	traverse([] (shutup::Patricia::NodeData *n, int depth) -> bool {
@@ -254,6 +254,7 @@ void Patricia::dump() {
 	});
 }
 #else
-void Patricia::dump() {}
+void Patricia::Node::dump() const {}
+void Patricia::dump() const {}
 #endif
 } //namespace shutup

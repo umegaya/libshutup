@@ -4,15 +4,15 @@
 
 extern "C" {
 	typedef void *shutup;
-	typedef struct shutup_allocator {
+	typedef struct _shutup_allocator {
 		void *(*malloc)(size_t);
 		void (*free)(void *);
 		void *(*realloc)(void *, size_t);
-	};
-	typedef struct shutup_block_config {
+	} shutup_allocator;
+	typedef struct _shutup_block_config {
 		bool check_alias;
 		bool full_combination;
-	};
+	} shutup_block_config;
 	extern shutup *shutup_new(const char *matcher, shutup_allocator *a);
 	extern shutup *shutup_setup_alias(shutup *s, const char ***alias_groups);
 	extern shutup *shutup_setup_mask(shutup *s, const char *mask);
