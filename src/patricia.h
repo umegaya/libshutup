@@ -67,8 +67,8 @@ public:
 	void dump() const;
 protected:
 	Node *find_node(const u8 *b, int l, int *ofs);
-	bool traverse(Node *n, int depth, std::function<bool(Node*, int)> iter);
-#if defined(TEST)
+	bool traverse(Node *n, int depth, std::function<bool(Node*, int)> iter) const;
+#if defined(TEST) || defined(DEBUG)
 public:
 	class NodeData : protected Node {
 	public:
@@ -77,7 +77,7 @@ public:
 		bool terminal() const { return term_; }
 	};
 	//test helpers
-	inline bool traverse(std::function<bool(NodeData*, int)> iter) { 
+	inline bool traverse(std::function<bool(NodeData*, int)> iter) const { 
 		auto tmp = [&iter] (Node *n, int depth) -> bool { return iter(reinterpret_cast<NodeData*>(n), depth); };
 		for (Node *n : root_->children_) {
 			if (!traverse(n, 1, tmp)) { return false; }

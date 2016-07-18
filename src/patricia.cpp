@@ -1,6 +1,6 @@
 #include "patricia.h"
 
-#if defined(DEBUG)
+#if defined(DEBUG) || defined(TEST)
 #include <cstdio>
 #endif
 
@@ -227,14 +227,14 @@ bool Patricia::contains(const u8 *b, int l, int *ofs) {
 	Node *n = find_node(b, l, ofs);
 	return n->terminal();
 }
-bool Patricia::traverse(Node *cur, int depth, std::function<bool(Node*, int)> iter) {
+bool Patricia::traverse(Node *cur, int depth, std::function<bool(Node*, int)> iter) const {
 	if (!iter(cur, depth)) { return false; }
 	for (Node *n : cur->children_) {
 		if (!traverse(n, depth + 1, iter)) { return false; }
 	}
 	return true;
 }
-#if defined(DEBUG)
+#if defined(DEBUG) || defined(TEST)
 void Patricia::Node::dump() const { 
 	char buffer[len_ + 1];
 	std::memcpy(buffer, bytes_, len_);
