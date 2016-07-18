@@ -4,15 +4,15 @@
 
 namespace shutup {
 //system mempool using std::malloc, free, realloc.
-class imempool {
+class IMempool {
 public:
-	virtual ~imempool() {}
+	virtual ~IMempool() {}
 	virtual void *malloc(size_t sz) = 0;
 	virtual void free(void *p) = 0;
 	virtual void *realloc(void *p, size_t sz) = 0;
-	virtual bool operator == (const imempool &m) { return true; }
+	virtual bool operator == (const IMempool &m) { return true; }
 };
-class system_mempool : public imempool {
+class SystemMempool : public IMempool {
 	void *malloc(size_t sz) {
 		return std::malloc(sz);
 	}
@@ -75,13 +75,13 @@ public:
 
     // Default constructor, copy constructor, rebinding constructor, and destructor.
     // Empty for stateless allocators.
-    allocator(imempool *m) : m_(m) {}
+    allocator(IMempool *m = nullptr) : m_(m == nullptr ? new SystemMempool() : m) {}
     allocator(const allocator &a) : m_(a.m_) {}
     template <typename U> allocator(const allocator<U> &a) : m_(a.m_) {}
     ~allocator() {}
 
     // accessor of underlaying mempool
-   	inline imempool &pool() { return *m_; }
+   	inline IMempool &pool() { return *m_; }
 
     // The following will be different for each allocator.
     T * allocate(const size_t n) const {
@@ -124,7 +124,7 @@ public:
 
 private: //prohibit copy
     allocator& operator=(const allocator&);
-    imempool *m_;
+    IMempool *m_;
 };
 
 template <typename T> void allocator<T>::destroy(T * const p) const {

@@ -18,9 +18,10 @@ struct testcase {
 	std::vector<operation> operations_;
 	std::vector<expect> expects_;
 	search search_;
+	shutup::IMatcher *matcher_;
 	//test routine
 	const char *test() {
-		shutup::Patricia p;
+		shutup::Patricia p(matcher_);
 		for (auto &o : operations_) {
 			if (std::strcmp(o.type, "+") == 0) { 
 				p.add(o.data); 
@@ -39,7 +40,7 @@ struct testcase {
 			auto e = expects[c++];
 			return e.depth == depth && 
 				std::strlen(e.data) == n->len() && 
-				memcmp(e.data, n->bytes(), n->len()) == 0;
+				(n->len() == 0 || memcmp(e.data, n->bytes(), n->len()) == 0);
 		})) {
 			p.dump();
 			return "traverse result does not match expects (content)";
@@ -74,6 +75,9 @@ extern const char *patricia_test() {
 			.message_ = "empty",
 			.operations_ = {},
 			.expects_ = {},
+			.search_= { 
+				.not_found={""} 
+			},
 		},
 		{
 			.message_ = "simple insert",
@@ -142,6 +146,63 @@ extern const char *patricia_test() {
 				.not_found = {"hoge", "hog", "e", "i"},
 			},
 		},
+		{
+			.message_ = "insert which includes previous element",
+			.operations_ = {{"+", "abc"}, {"+", "abd"}, {"+", "abde"}},
+			.expects_ = {
+				{"ab", 1},
+					{"c", 2},
+					{"d", 2},
+						{"", 3},
+						{"e", 3},
+			},
+			.search_ = {
+				.found = {"abc", "abd", "abde"}, 
+			},
+		},
+		{
+			.message_ = "insert which is included by previous element",
+			.operations_ = {{"+", "abc"}, {"+", "abde"}, {"+", "abd"}},
+			.expects_ = {
+				{"ab", 1},
+					{"c", 2},
+					{"d", 2},
+						{"", 3},
+						{"e", 3},
+			},
+			.search_ = {
+				.found = {"abc", "abd", "abde"}, 
+			},
+		},
+		/*
+		{
+			.message_ = "utf8 insert",
+			.operations_ = {{"+", "あたま"}, {"+", "あたれ"}, {"+", "あたれば"}},
+			.expects_ = {
+				{"あた", 1},
+					{"ま", 2},
+					{"れ", 2},
+						{"", 3},
+						{"ば", 3},
+			},
+			.search_ = {
+				.found = {"あたま", "あたれ", "あたれば"}, 
+			},
+			.matcher_ = new shutup::UTF8Matcher(),
+		},
+		{
+			.message_ = "utf8 insert + remove cause merge",
+			.operations_ = {{"+", "あたま"}, {"+", "あたる"}, {"-", "あたる"}},
+			.expects_ = {
+				{"あたま", 1},
+			},
+			.search_ = {
+				.found = {"あたま"}, 
+				.not_found = {"あたる"},
+			},
+			.matcher_ = new shutup::UTF8Matcher(),
+		},
+		*/
 	};
 	for (auto &c : cases) {
 		std::printf("patricia_test %s\n", c.message_);

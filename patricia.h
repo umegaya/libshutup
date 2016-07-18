@@ -26,8 +26,8 @@ class Patricia {
 		inline ~Node() {} 
 		void merge(allocator<Node*> &a, Node *with);
 		void destroy(allocator<Node*> &a);
-		void add_child(allocator<Node*> &a, const u8 *b, int l);
-		Node *find_child(imatcher &m, const u8 *b, int l, int *ofs);
+		void add_child(allocator<Node*> &a, IMatcher &m, const u8 *b, int l);
+		Node *find_child(IMatcher &m, const u8 *b, int l, int *ofs);
 		static bool compare(const Node *left, const Node *right);
 		void sort_children();
 		void remove_self(allocator<Node*> &a);
@@ -38,6 +38,7 @@ class Patricia {
 		}
 		inline bool terminal() const { return children_.size() == 0; }
 		inline bool root() const { return parent_ == nullptr; }
+		void dump() const;
 		static inline void *operator new(std::size_t, void *buf) { return buf; }
 		static inline void operator delete(void *p, void *buf) {}
 		static inline Node *new_node(allocator<Node*> &a, Node *parent, const u8 *b, int l) {
@@ -48,13 +49,11 @@ class Patricia {
 		}
 	};
 public:
-	imatcher *matcher_;
+	IMatcher *matcher_;
 	allocator<Node*> alloc_;
 	Node *root_;
-	inline Patricia() : matcher_(new byte_matcher()), alloc_(new system_mempool()), root_(Node::new_root(alloc_)) {}
-	inline Patricia(imatcher *mch) : matcher_(mch), alloc_(new system_mempool()), root_(Node::new_root(alloc_)) {}
-	inline Patricia(imempool *m) : matcher_(new byte_matcher()), alloc_(m), root_(Node::new_root(alloc_)) {}
-	inline Patricia(imatcher *mch, imempool *m) : matcher_(mch), alloc_(m), root_(Node::new_root(alloc_)) {}
+	inline Patricia(IMatcher *mch = nullptr, IMempool *m = nullptr) : 
+		matcher_(mch == nullptr ? new ByteMatcher() : mch), alloc_(m), root_(Node::new_root(alloc_)) {}
 	~Patricia();
 	void add_slice(const u8 *b, int l);
 	void remove_slice(const u8 *b, int l);
