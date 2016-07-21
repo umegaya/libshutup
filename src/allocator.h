@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdlib> 
 #include <stdexcept>
 
 namespace shutup {
@@ -76,12 +77,12 @@ public:
     // Default constructor, copy constructor, rebinding constructor, and destructor.
     // Empty for stateless allocators.
     allocator(IMempool *m = nullptr) : m_(m == nullptr ? new SystemMempool() : m) {}
-    allocator(const allocator &a) : m_(a.m_) {}
-    template <typename U> allocator(const allocator<U> &a) : m_(a.m_) {}
+    allocator(const allocator &a) : m_(&(a.pool())) {}
+    template <typename U> allocator(const allocator<U> &a) : m_(&(a.pool())) {}
     ~allocator() {}
 
     // accessor of underlaying mempool
-   	inline IMempool &pool() { return *m_; }
+   	inline IMempool &pool() const { return *m_; }
 
     // The following will be different for each allocator.
     T * allocate(const size_t n) const {
