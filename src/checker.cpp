@@ -85,11 +85,14 @@ bool Checker::should_filter(const char *in, char *out, int *olen) {
 }
 
 IWordChecker *Checker::by(const char *lang, Mempool &p) {
+	IWordChecker *w;
 	if (std::memcmp(lang, "jp", 2) == 0) {
-		return new(p.malloc(sizeof(language::JP))) language::JP(&p);
+		w = new(p.malloc(sizeof(language::JP))) language::JP(&p);
 	} else {
 		TRACE("invalid language %s\n", lang);
 		return nullptr;
 	}
+	w->init();
+	return w;
 }
 }

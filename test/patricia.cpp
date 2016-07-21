@@ -1,6 +1,8 @@
 #include <cstdio>
 #include "patricia.h"
 
+namespace test {
+namespace patricia {
 class IgnoreSpaceMatcher : public shutup::UTF8Matcher {
 	static bool isspace(shutup::u8 p) {
 		//std::printf("isspace: %02x %02x %02x\n", p, static_cast<shutup::u8>(' '), static_cast<shutup::u8>('\t'));
@@ -9,7 +11,7 @@ class IgnoreSpaceMatcher : public shutup::UTF8Matcher {
 	int match(const shutup::u8 *in, int ilen, const shutup::u8 *pattern, int plen, int *ofs) {
 		int i = 0, p = 0;
 		while (i < std::min(ilen, plen)) {
-			int tmp = shutup::UTF8Matcher::utf8peek(in + i, ilen - i);
+			int tmp = shutup::utf8::peek(in + i, ilen - i);
 			//std::printf("peek: %d %d %d\n", tmp, i, plen);
 			if (tmp <= 0) {
 				break;
@@ -30,9 +32,6 @@ class IgnoreSpaceMatcher : public shutup::UTF8Matcher {
 	}
 };
 
-static inline void *p(int id) {
-	return reinterpret_cast<void *>(id);
-}
 struct testcase {
 	struct operation {
 		const char *type;
@@ -105,9 +104,15 @@ struct testcase {
 		return nullptr;		
 	}
 };
+}
+}
+
+static void *p(int id) {
+	return reinterpret_cast<void *>(id);
+}
 
 extern const char *patricia_test() {
-	std::vector<testcase> cases{
+	std::vector<test::patricia::testcase> cases{
 		{
 			.message_ = "empty",
 			.operations_ = {},
@@ -319,7 +324,7 @@ extern const char *patricia_test() {
 				.found = {"あたま", "あたる", "あ た ま", "あ	た	る", "あた	る"}, 
 				.not_found = {"あ た 	れ", "あ	たれ"},
 			},
-			.matcher_ = new IgnoreSpaceMatcher(),
+			.matcher_ = new test::patricia::IgnoreSpaceMatcher(),
 		},
 	};
 	for (auto &c : cases) {

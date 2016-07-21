@@ -6,6 +6,7 @@
 
 namespace shutup {
 namespace language {
+//aliasやignore stringの登録などを行う.
 int WordChecker::init() {
 	return 0;
 }
@@ -19,6 +20,7 @@ WordChecker::normalizer *WordChecker::normalizers(int *n_norm) {
 	*n_norm = 0;
 	return nullptr;
 }
+//マッチングで無視される文字列かどうかを判定する.
 bool WordChecker::ignored(const char *g) { 
 	return std::strstr(ignore_gryphs_, g) != nullptr; 
 }
