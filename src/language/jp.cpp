@@ -21,7 +21,7 @@ int JP::init() {
 	//ひらがな、カタカナをそれぞれのaliasとする.
 	size_t hlen = std::strlen(utf8::hiras), klen = std::strlen(utf8::katas);
 	int hidx = 0, kidx = 0;
-	while (true) {
+	while (kidx < klen && hidx < hlen) {
 		int htmp = utf8::peek(reinterpret_cast<const u8 *>(utf8::hiras + hidx), hlen - hidx);
 		int ktmp = utf8::peek(reinterpret_cast<const u8 *>(utf8::katas + kidx), klen - kidx);
 		if (htmp == 0 || ktmp == 0) {
@@ -31,16 +31,19 @@ int JP::init() {
 		std::memcpy(hira, utf8::hiras + hidx, htmp); hira[htmp] = 0;
 		std::memcpy(kata, utf8::katas + kidx, ktmp); kata[ktmp] = 0;
 		link_alias(hira, kata);
+		hidx += htmp;
+		kidx += ktmp;
 	}
 	//TODO: ソとンみたいなのとか、ひらがなの大文字小文字とか.
 	return 0;
 }
 //normalizeで使うnormalizerを定義する.
 WordChecker::normalizer *JP::normalizers(int *n_norm) {
-	static normalizer norms[] = {
+	static normalizer norms[3] = {
 		utf8::widen_kata,		//try widen kata
 		utf8::shrunk_alnum,	//try shrunk alphabet (half byte lower)
 	};
+	norms[2] = remove_ignored_;
 	*n_norm = (int)(sizeof(norms)/sizeof(norms[0]));
 	return norms;
 }

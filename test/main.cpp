@@ -3,6 +3,8 @@
 
 extern const char *patricia_test();
 extern const char *util_test();
+extern const char *language_test();
+extern const char *checker_test();
 
 int main(int argc, char *argv[]) {
 	struct {
@@ -11,6 +13,8 @@ int main(int argc, char *argv[]) {
 	} tests[] = {
 		{"patricia", patricia_test},
 		{"util", util_test},
+		{"language", language_test},
+		{"checker", checker_test},
 	};
 	for (int i = 0; i < (int)(sizeof(tests)/sizeof(tests[0])); i++) {
 		if (argc <= 1 || std::strcmp(argv[1], tests[i].name) == 0) {

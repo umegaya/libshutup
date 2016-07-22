@@ -17,8 +17,8 @@ void WordChecker::add_synonym(const char *pattern, Checker &c) {
 }
 //normalizeで使うnormalizerを定義する.
 WordChecker::normalizer *WordChecker::normalizers(int *n_norm) {
-	*n_norm = 0;
-	return nullptr;
+	*n_norm = 1;
+	return &remove_ignored_;
 }
 //マッチングで無視される文字列かどうかを判定する.
 bool WordChecker::ignored(const char *g) { 
@@ -49,7 +49,7 @@ NEXT:
 		for (int i = 0; i < n_norm; i++) {
 			auto norm = norms[i];
 			wtmp = olen - n_write;
-			rtmp = norm(in + n_read, ilen - n_read, out + wtmp, &wtmp);
+			rtmp = norm(in + n_read, ilen - n_read, out + n_write, &wtmp);
 			if (rtmp < 0) { 
 				return rtmp; 
 			} else if (rtmp > 0) {
@@ -71,7 +71,8 @@ NEXT:
 void WordChecker::set_alias(const char *pattern, strvec &vec) { 
 	auto i = aliases_.find(pattern);
 	if (i == aliases_.end()) {
-		vec.push_back(pattern); aliases_[pattern] = std::move(vec); 
+		vec.push_back(pattern); 
+		aliases_[pattern] = std::move(vec); 
 	} else {
 		strvec &v = (*i).second;
 		std::copy(vec.begin(), vec.end(), std::back_inserter(v));
@@ -98,6 +99,22 @@ void WordChecker::add_ignore_gryphs(const char *gryphs, bool reset) {
 		size_t sz = std::strlen(gryphs), osz = std::strlen(ignore_gryphs_);
 		ignore_gryphs_ = reinterpret_cast<char *>(pool().realloc(ignore_gryphs_, osz + sz + 1));
 		std::strncpy(ignore_gryphs_ + osz, gryphs, sz);	
+	}
+}
+int WordChecker::remove_ignored(const u8 *in, int ilen, u8 *out, int *olen) {
+	u8 buff[utf8::MAX_BYTE_PER_GRYPH + 1];
+	int r = utf8::copy(in, ilen, buff, sizeof(buff), 1);
+	if (r <= 0) {
+		*olen = 0;
+		return 0;
+	}
+	buff[r] = 0;
+	if (ignored(reinterpret_cast<const char *>(buff))) {
+		*olen = 0;
+		return r;
+	} else {
+		*olen = 0;
+		return 0;
 	}
 }
 }

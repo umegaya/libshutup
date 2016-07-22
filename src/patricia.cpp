@@ -161,7 +161,6 @@ void Patricia::Node::remove_self(allocator<Node*> &a) {
 					c
 					d
 		*/
-		parent_->dump();
 		if (siblings.size() == 1) {
 			//merge this child node with parent.
 			//parent_とsiblings[0]はこの中で解放される.

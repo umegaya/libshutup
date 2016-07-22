@@ -44,6 +44,6 @@ public:
 	const char *filter(const char *in, char *out, int *olen, const char *mask = "?");
 	bool should_filter(const char *s, char *out, int *olen);
 public:
-	IWordChecker *by(const char *lang, Mempool &m);
+	static IWordChecker *by(const char *lang, Mempool &m);
 };
 }

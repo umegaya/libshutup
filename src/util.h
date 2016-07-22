@@ -7,6 +7,7 @@
 
 // macro!!!
 #if defined(TEST) || defined(DEBUG)
+#include <cstdio>
 #define TRACE(...) std::printf(__VA_ARGS__)
 #else
 #define TRACE(...)
@@ -14,41 +15,17 @@
 
 namespace shutup {
 //
-//	template utils
-//
-namespace tpl {
-//map which can handle const char *key correctly
-class pstring_compare {
-public:
-	static const int MAX_KEY_LEN = 1024;
-	bool operator()(const char *lhs, const char *rhs) const {
-		size_t ll = strnlen(lhs, MAX_KEY_LEN), rl = strnlen(rhs, MAX_KEY_LEN);
-		int r = std::memcmp(lhs, rhs, std::min(ll, rl));
-		if (r == 0) {
-			return ll < rl;
-		} else {
-			return r < 0;
-		}
-	}
-};
-template <class T, class A> class psmap : public std::map<const char*, T, pstring_compare, A> {
-public:
-	typedef std::map<const char*, T, pstring_compare, A> super;
-	psmap(const typename super::allocator_type& a) : super(a) {}
-	T *get(const char *key) {
-		auto i = super::find(key);
-		return (i != super::end()) ? &(*i) : nullptr;
-	}
-};
-}
-//
 //	utf8 utils
 //
 class utf8 {
 public:
+	static const int MAX_BYTE_PER_GRYPH = 6;
 	//string sets
 	static const char *hiras;
 	static const char *katas;
+	static const char *wide_katas;
+	static const char *wide_psign_katas;
+	static const char *wide_sonant_katas;
 	static const char *alphabets;
 	static const char *upper_alphabets;
 	static const char *wide_lower_alphabets;
@@ -86,6 +63,7 @@ public:
 	static bool is_kana_string(const char *str);
 	static int to_hebon_roman(const u8 *in, int ilen, u8 *out, int *olen);
 	static int to_japan_roman(const u8 *in, int ilen, u8 *out, int *olen);
+	static int norm_space_and_lf(const u8 *in, int ilen, u8 *out, int *olen);
 	static int widen_kata(const u8 *in, int ilen, u8 *out, int *olen);
 	static int shrunk_alnum(const u8 *in, int ilen, u8 *out, int *olen);
 };

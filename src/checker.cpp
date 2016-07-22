@@ -3,11 +3,10 @@
 
 namespace shutup {
 
-static int UTF8_MAX_BYTE_PER_GRYPH = 6;
 void Checker::add(const char *s) { 
 	int sz = strnlen(s, MAX_FILTER_STRING);
-	u8 buf[sz * UTF8_MAX_BYTE_PER_GRYPH];
-	int rlen = checker_->normalize(reinterpret_cast<const u8*>(s), sz, buf, sz * UTF8_MAX_BYTE_PER_GRYPH);
+	u8 buf[sz * utf8::MAX_BYTE_PER_GRYPH];
+	int rlen = checker_->normalize(reinterpret_cast<const u8*>(s), sz, buf, sz * utf8::MAX_BYTE_PER_GRYPH);
 	buf[rlen] = 0;
 	checker_->add_synonym(reinterpret_cast<const char *>(buf), *this);
 }
@@ -20,10 +19,10 @@ int Checker::masking(const u8 *in, int ilen, u8 *out, int olen, const char *mask
 		}
 		char gryph[tmp + 1];
 		std::memcpy(gryph, in + iofs, tmp); gryph[tmp] = 0;
-		if (checker_->ignored(gryph)) {
+		if (!checker_->ignored(gryph)) {
 			std::memcpy(out + oofs, mask, mlen);
 			oofs += mlen;
-			iofs += mlen;
+			iofs += tmp;
 		} else {
 			std::memcpy(out + oofs, gryph, tmp);
 			oofs += tmp;
@@ -63,8 +62,8 @@ const char *Checker::filter(const char *in, char *out, int *olen, const char *ma
 }
 bool Checker::should_filter(const char *in, char *out, int *olen) {
 	int sz = strnlen(in, MAX_FILTER_STRING);
-	u8 buf[sz * UTF8_MAX_BYTE_PER_GRYPH];
-	int rofs = 0, rlen = checker_->normalize(reinterpret_cast<const u8*>(in), sz, buf, sz * 6);
+	u8 buf[sz * utf8::MAX_BYTE_PER_GRYPH];
+	int rofs = 0, rlen = checker_->normalize(reinterpret_cast<const u8*>(in), sz, buf, sz * utf8::MAX_BYTE_PER_GRYPH);
 	if (rlen < 0) {
 		//overflow?
 		return true;
