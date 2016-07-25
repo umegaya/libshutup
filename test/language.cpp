@@ -51,6 +51,7 @@ struct testcase {
 			shutup::u8 out[olen];
 			int wlen = wc->normalize(reinterpret_cast<const shutup::u8*>(n.text_), rlen, out, olen);
 			if (wlen < 0) {
+				TRACE("norm: fail %d\n", wlen);
 				return "fail to normalize";
 			}
 			out[wlen] = 0;
@@ -75,7 +76,7 @@ extern const char *language_test() {
 				{"ｱ", "ア"},
 				{"ｦ", "ヲ"},
 				{"ﾝ", "ン"},
-				{"ｰ", "ー"},
+				{"ｰ", ""},
 				{"ﾞ", ""},
 				{"ﾟ", ""},
 				{"ｶﾞ", "ガ"},

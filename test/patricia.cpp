@@ -326,6 +326,18 @@ extern const char *patricia_test() {
 			},
 			.matcher_ = new test::patricia::IgnoreSpaceMatcher(),
 		},
+		{
+			.message_ = "test practical example",
+			.operations_ = {{"+", "バッドワド", p(1)}, {"+", "badword", p(2)}},
+			.expects_ = {
+				{"バッドワド", 1, p(1)},
+				{"badword", 1, p(2)},
+			},
+			.search_ = {
+				.found = {"badword"}, 
+			},
+			.matcher_ = new test::patricia::IgnoreSpaceMatcher(),
+		},
 	};
 	for (auto &c : cases) {
 		std::printf("patricia_test %s\n", c.message_);

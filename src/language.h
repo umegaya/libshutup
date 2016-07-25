@@ -42,6 +42,8 @@ public:
 	void link_alias(const char *pattern1, const char *pattern2);
 	void add_ignore_gryphs(const char *gryphs, bool reset = false);
 	int remove_ignored(const u8 *in, int ilen, u8 *out, int *olen);
+	int read_next_with_normalize(const u8 *in, int ilen, u8 *out, int *olen);
+	const strvec &alias_list(const char *key) const;
 	inline void set_ignore_gryphs(const char *gryphs) { add_ignore_gryphs(gryphs, true); }
 	inline IMempool &pool() { return pstr_alloc_.pool(); }
 public:

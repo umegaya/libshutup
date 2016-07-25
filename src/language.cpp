@@ -13,7 +13,7 @@ int WordChecker::init() {
 //aliasは文字単位での組み合わせを全てチェックしてしまうので、そこまでチェックしたくない場合、
 //ここで単語単位で同じ意味のものを登録する.
 void WordChecker::add_synonym(const char *pattern, Checker &c) {
-	c.add(pattern);
+	c.add_word(pattern);
 }
 //normalizeで使うnormalizerを定義する.
 WordChecker::normalizer *WordChecker::normalizers(int *n_norm) {
@@ -26,45 +26,94 @@ bool WordChecker::ignored(const char *g) {
 }
 //文字列のマッチを行う.
 int WordChecker::match(const u8 *in, int ilen, const u8 *pattern, int plen, int *ofs) {
-	int i = 0;
-	while (i < std::min(ilen, plen)) {
-		int tmp = utf8::peek(in + i, ilen - i);
-		if (tmp <= 0 || plen < (i + tmp)) {
+#if defined(TEST) || defined(DEBUG)
+	char buf1[256], buf2[256];
+	std::memcpy(buf1, in, ilen); buf1[ilen] = 0;
+	std::memcpy(buf2, pattern, plen); buf2[plen] = 0;
+	//TRACE("match: %s[%d] %s[%d]\n", buf1, ilen, buf2, plen);
+#endif
+	int n_read = 0, n_pread = 0;
+	u8 out[utf8::MAX_BYTE_PER_GRYPH];
+	u8 pout[utf8::MAX_BYTE_PER_GRYPH];
+NEXT:
+	while (n_read < ilen && n_pread < plen) {
+		int wtmp = utf8::MAX_BYTE_PER_GRYPH;
+		int rtmp = read_next_with_normalize(in + n_read, ilen - n_read, out, &wtmp);
+		//TRACE("read_next_with_normalize: %d %d\n", rtmp, wtmp);
+		if (rtmp < 0) {
+			return rtmp; //error
+		} else if (rtmp == 0) {
+			break; //finish
+		} else if (wtmp == 0) {
+			//glyph just skipped. 
+			if (n_read > 0) {
+				//preceding matched glyph already exists. read next
+				n_read += rtmp;
+				goto NEXT;
+			} else {
+				//first glyph is ignored glyph. start matching next one.
+				break;
+			}
+		} else {
+			out[wtmp] = 0;
+			int prtmp = utf8::peek(pattern + n_pread, plen - n_pread);
+			std::memcpy(pout, pattern + n_pread, prtmp);
+			pout[prtmp] = 0;
+			auto al = alias_list(reinterpret_cast<const char *>(pout));
+			//TRACE("check with alias: pick %s %s %lu\n", out, pout, al.size());
+			if (al.size() > 0) {
+				for (auto &a : al) {
+					if (wtmp == a.length() && std::memcmp(out, a.c_str(), wtmp) == 0) {
+						n_read += rtmp;
+						n_pread += prtmp;
+						goto NEXT;
+					}
+				}
+			} else if (wtmp == prtmp && std::memcmp(out, pout, wtmp) == 0) {
+				n_read += rtmp;
+				n_pread += prtmp;
+				goto NEXT;
+			}
 			break;
 		}
-		if (memcmp(in + i, pattern + i, tmp) != 0) {
-			break;
-		}
-		i += tmp;
 	}
-	*ofs = i;
-	return i;
+	*ofs = n_read;
+	return n_pread;
+}
+//次の一文字の正規化を行う.
+int WordChecker::read_next_with_normalize(const u8 *in, int ilen, u8 *out, int *olen) {
+	int tmp, otmp, n_norm;
+	normalizer *norms = normalizers(&n_norm);
+	for (int i = 0; i < n_norm; i++) {
+		auto norm = norms[i];
+		otmp = *olen;
+		tmp = norm(in, ilen, out, &otmp);
+		if (tmp != 0) { 
+			*olen = otmp;
+			return tmp; 
+		}
+	}
+	//nothing convert current character. just copy one utf8 character.
+	tmp = utf8::copy(in, ilen, out, *olen, 1);
+	if (tmp < 0) {
+		return tmp;
+	}
+	*olen = tmp;
+	return tmp;
 }
 //文字種を限定するために誤検出の心配がないような文字種の変換を既に行っておく.
 int WordChecker::normalize(const u8 *in, int ilen, u8 *out, int olen) {
-	int n_read = 0, n_write = 0, wtmp, rtmp, n_norm;
-	normalizer *norms = normalizers(&n_norm);
-NEXT:
+	int n_read = 0, n_write = 0, wtmp, rtmp;
 	while (olen > n_write && ilen > n_read) {
-		for (int i = 0; i < n_norm; i++) {
-			auto norm = norms[i];
-			wtmp = olen - n_write;
-			rtmp = norm(in + n_read, ilen - n_read, out + n_write, &wtmp);
-			if (rtmp < 0) { 
-				return rtmp; 
-			} else if (rtmp > 0) {
-				n_read += rtmp;
-				n_write += wtmp;
-				goto NEXT;
-			}
+		wtmp = olen - n_write;
+		//TRACE("read_next_with_normalize: %d %d %d %d\n", ilen, olen, n_read, n_write);
+		rtmp = read_next_with_normalize(in + n_read, ilen - n_read, out + n_write, &wtmp);
+		if (rtmp < 0) {
+			return rtmp;
+		} else {
+			n_read += rtmp;
+			n_write += wtmp;
 		}
-		//nothing convert current character. just copy one utf8 character.
-		int tmp = utf8::copy(in + n_read, ilen - n_read, out + n_write, olen - n_write, 1);
-		if (tmp < 0) {
-			return tmp;
-		}
-		n_read += tmp;
-		n_write += tmp;
 	}
 	return n_write;
 }
@@ -84,6 +133,15 @@ void WordChecker::link_alias(const char *pattern1, const char *pattern2) {
 		strvec v2(pstr_alloc_); v2.push_back(pattern2);
 		set_alias(pattern1, v2);
 		set_alias(pattern2, v1);
+	}
+}
+const WordChecker::strvec &WordChecker::alias_list(const char *key) const {
+	auto i = aliases_.find(key);
+	if (i == aliases_.end()) {
+		static strvec empty_list;
+		return empty_list;
+	} else {
+		return (*i).second;
 	}
 }
 void WordChecker::add_ignore_gryphs(const char *gryphs, bool reset) { 

@@ -9,6 +9,7 @@ namespace language {
 //チェックの時、無視する文字達.
 static const char *ignore_glyphs = 
 "-+!\"#$%%&()*/,:;<=>?@[\\]^_{|}~ "
+"ｰ" //half kata hyphen
 "、。，．・：；？！゛゜´｀¨＾￣＿ヽヾゝゞ〃仝々〆〇ー‐／＼～∥｜…‥"
 "‘’“”（）〔〕［］｛｝〈〉《》「」『』【】＋－±×÷＝≠＜＞≦≧∞∴"
 "♂♀°′″℃￥＄￠￡％＃＆＊＠§☆★○●◎◇◆□■△▲▽▼※〒→←↑↓"
@@ -40,10 +41,11 @@ int JP::init() {
 //normalizeで使うnormalizerを定義する.
 WordChecker::normalizer *JP::normalizers(int *n_norm) {
 	static normalizer norms[3] = {
+		nullptr,
 		utf8::widen_kata,		//try widen kata
 		utf8::shrunk_alnum,	//try shrunk alphabet (half byte lower)
 	};
-	norms[2] = remove_ignored_;
+	norms[0] = remove_ignored_;
 	*n_norm = (int)(sizeof(norms)/sizeof(norms[0]));
 	return norms;
 }
@@ -52,10 +54,10 @@ WordChecker::normalizer *JP::normalizers(int *n_norm) {
 void JP::add_synonym(const char *pattern, Checker &c) {
 	if (utf8::is_kana_string(pattern)) {
 		//ローマ字変換の登録.
-		c.add(to_hebon_roman(pattern));
-		c.add(to_japan_roman(pattern));
+		c.add_word(to_hebon_roman(pattern));
+		c.add_word(to_japan_roman(pattern));
 	}
-	c.add(pattern);
+	c.add_word(pattern);
 }
 const char *JP::to_hebon_roman(const char *str) {
 	u8 buff[256];

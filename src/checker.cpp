@@ -6,8 +6,10 @@ namespace shutup {
 void Checker::add(const char *s) { 
 	int sz = strnlen(s, MAX_FILTER_STRING);
 	u8 buf[sz * utf8::MAX_BYTE_PER_GRYPH];
+	//TRACE("checker::add %s\n", s);
 	int rlen = checker_->normalize(reinterpret_cast<const u8*>(s), sz, buf, sz * utf8::MAX_BYTE_PER_GRYPH);
 	buf[rlen] = 0;
+	//TRACE("checker::aft norm %s\n", buf);
 	checker_->add_synonym(reinterpret_cast<const char *>(buf), *this);
 }
 int Checker::masking(const u8 *in, int ilen, u8 *out, int olen, const char *mask, int mlen) {
@@ -19,6 +21,7 @@ int Checker::masking(const u8 *in, int ilen, u8 *out, int olen, const char *mask
 		}
 		char gryph[tmp + 1];
 		std::memcpy(gryph, in + iofs, tmp); gryph[tmp] = 0;
+		//TRACE("masking: gryph: %s\n", gryph);
 		if (!checker_->ignored(gryph)) {
 			std::memcpy(out + oofs, mask, mlen);
 			oofs += mlen;
@@ -33,22 +36,17 @@ int Checker::masking(const u8 *in, int ilen, u8 *out, int olen, const char *mask
 	return oofs;
 }
 const char *Checker::filter(const char *in, char *out, int *olen, const char *mask) {
-	int sz = strnlen(in, MAX_FILTER_STRING);
+	int rlen = strnlen(in, MAX_FILTER_STRING), rofs = 0;
 	int msz = strnlen(mask, MAX_FILTER_STRING);
-	u8 buf[*olen];
-	int rofs = 0, rlen = checker_->normalize(reinterpret_cast<const u8*>(in), sz, buf, *olen);
-	if (rlen < 0) {
-		//overflow?
-		return nullptr;
-	}
 	int wofs = 0, tmp;
+	const u8 *iptr = reinterpret_cast<const u8 *>(in);
 	u8 *optr = reinterpret_cast<u8 *>(out);
 	while (rofs < rlen) {
-		if (trie_.get(buf + rofs, rlen - rofs, &tmp) != nullptr) {
-			wofs += masking(buf + rofs, rlen - rofs, optr + wofs, *olen - wofs, mask, msz);
+		if (trie_.get(iptr + rofs, rlen - rofs, &tmp) != nullptr) {
+			wofs += masking(iptr + rofs, tmp, optr + wofs, *olen - wofs, mask, msz);
 			rofs += tmp;
 		} else {
-			tmp = utf8::copy(buf + rofs, rlen - rofs, optr + wofs, *olen - wofs, 1);
+			tmp = utf8::copy(iptr + rofs, rlen - rofs, optr + wofs, *olen - wofs, 1);
 			if (tmp < 0) {
 				return nullptr; //buf short
 			}
@@ -61,22 +59,17 @@ const char *Checker::filter(const char *in, char *out, int *olen, const char *ma
 	return out;
 }
 bool Checker::should_filter(const char *in, char *out, int *olen) {
-	int sz = strnlen(in, MAX_FILTER_STRING);
-	u8 buf[sz * utf8::MAX_BYTE_PER_GRYPH];
-	int rofs = 0, rlen = checker_->normalize(reinterpret_cast<const u8*>(in), sz, buf, sz * utf8::MAX_BYTE_PER_GRYPH);
-	if (rlen < 0) {
-		//overflow?
-		return true;
-	}
+	int rlen = strnlen(in, MAX_FILTER_STRING), rofs = 0;
 	int tmp;
+	const u8 *iptr = reinterpret_cast<const u8 *>(in);
 	while (rofs < rlen) {
-		if (trie_.get(buf + rofs, rlen - rofs, &tmp) != nullptr) {
+		if (trie_.get(iptr + rofs, rlen - rofs, &tmp) != nullptr) {
 			int n_copy = std::min(tmp, *olen - 1);
-			std::strncpy(out, reinterpret_cast<char *>(buf + rofs), n_copy);
+			std::strncpy(out, in + rofs, n_copy);
 			*olen = n_copy;
 			return true;
 		} else {
-			tmp = utf8::peek(buf + rofs, rlen - rofs);
+			tmp = utf8::peek(iptr + rofs, rlen - rofs);
 			rofs += tmp;
 		}
 	}

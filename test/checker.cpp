@@ -23,19 +23,30 @@ struct testcase {
 	std::vector<input> inputs_;
 	const char *test() {
 		shutup::Checker c(lang_, nullptr);
+		int count = 0;
+		for (auto w : filters_) {
+		TRACE("add filter word %s\n", w);
+			c.add(w);
+			count++;
+		}
+		TRACE("start input test\n");
 		for (auto &i : inputs_) {
 			int ilen = std::strlen(i.text_);
 			int olen = ilen * shutup::utf8::MAX_BYTE_PER_GRYPH;
 			char buff[olen];
+			//TRACE("===== %s: should_filter test\n", i.text_);
 			if (i.filtered_ != c.should_filter(i.text_, buff, &olen)) {
 				TRACE("input:[%s]\n", i.text_);
 				return "text should be filtered but actually not";
 			}
+			//TRACE("===== %s: should_filter test ok\n", i.text_);
 			buff[olen] = 0;
+			//TRACE("===== %s: should_filter word test\n", i.text_);
 			if (i.filtered_ && std::strcmp(i.matched_, buff) != 0) {
 				TRACE("filtered:[%s] [%s]\n", i.matched_, buff);
 				return "filtered but match part does not match expected";
 			}
+			//TRACE("===== %s: filter test\n", i.text_);
 			olen = ilen * shutup::utf8::MAX_BYTE_PER_GRYPH;
 			const char *r = mask_ == nullptr ? c.filter(i.text_, buff, &olen) : c.filter(i.text_, buff, &olen, mask_);
 			if (std::strcmp(i.expect_, r) != 0) {
@@ -61,10 +72,10 @@ extern const char *checker_test() {
 			.inputs_ = {
 				{"ＢａdＷorDです", true, "ＢａdＷorD", "???????です"},
 				{"ＢａdＷorOです", false, "", "ＢａdＷorOです"},
-				{"これってＢ|ａ「d」Ｗ(or)Dなの", true, "Ｂ|ａ「d」Ｗ(or)D", "これって?|?「?」?(??)?なの"},
-				{"_ﾊﾞｯドわーﾄﾞ_", true, "ﾊﾞｯドわーﾄﾞ", "_???????_"},
-				{"これはﾊﾞ：ｯ；ﾄﾞ_？_わｰドですか？", true, "?：?；?？???", "これは?：?；?？???ですか？"},
-				{"これはﾊﾞ：ｯ；ﾄﾞ_？_わドですか？", false, "", "これはﾊﾞ：ｯ；ﾄﾞ_？_わドですか？"},
+				{"これってＢ|ａ「d」Ｗ(or)Dなの", true, "Ｂ|ａ「d」Ｗ(or)D", "これって?|?「?」?(\?\?)?なの"},
+				{"_ﾊﾞｯドわーﾄﾞ_", true, "ﾊﾞｯドわーﾄﾞ", "_?????ー??_"},
+				{"これはﾊﾞ：ｯ；ﾄﾞ_？_わｰドですか？", true, "ﾊﾞ：ｯ；ﾄﾞ_？_わｰド", "これは??：?；??_？_?ｰ?ですか？"},
+				{"これはﾊﾞ：ｯ；ﾄﾞ_？_わタですか？", false, "", "これはﾊﾞ：ｯ；ﾄﾞ_？_わタですか？"},
 			},
 		},
 	};
