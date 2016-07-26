@@ -378,7 +378,7 @@ int utf8::to_roman(const u8 *in, int ilen, u8 *out, int *olen, bool assimilated,
 		std::memcpy(out + clen, vowels[vowel_index], 1);
 		*olen = total_len;
 		//長音記号の無視.
-		ntmp, nidx = kana_index(in + tmp, ilen - tmp, &ntmp);
+		nidx = kana_index(in + tmp, ilen - tmp, &ntmp);
 		if (nidx >= 0) {
 			int next_vowel_index = nidx % 5, next_consonant_index = nidx / 5;
 			if (next_vowel_index == Vowel::I && next_consonant_index == Consonant::NN) {
