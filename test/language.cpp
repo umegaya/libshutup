@@ -24,21 +24,21 @@ struct testcase {
 		wc->init();
 		if (!alias_tested_) {
 			for (auto &c : reinterpret_cast<shutup::language::WordChecker*>(wc)->aliases()) {
-				const char *k = std::strstr(shutup::utf8::katas, c.first.c_str());
+				const char *k = std::strstr(shutup::utf8::jp::katas, c.first.c_str());
 
 				if (k != nullptr) {
-					const char *v = std::strstr(shutup::utf8::hiras, c.second[0].c_str());
-					if ((k - shutup::utf8::katas) != (v - shutup::utf8::hiras)) {
+					const char *v = std::strstr(shutup::utf8::jp::hiras, c.second[0].c_str());
+					if ((k - shutup::utf8::jp::katas) != (v - shutup::utf8::jp::hiras)) {
 						return "wrong kata-kana alias setting";
 					}
 				} else {
-					k = std::strstr(shutup::utf8::hiras, c.first.c_str());
+					k = std::strstr(shutup::utf8::jp::hiras, c.first.c_str());
 					if (k == nullptr) {
 						TRACE("k not found: [%s]\n", c.first.c_str());
 						return "alias key exists which is not hira-kana or kata-kana";
 					}
-					const char *v = std::strstr(shutup::utf8::katas, c.second[0].c_str());
-					if ((v - shutup::utf8::katas) != (k - shutup::utf8::hiras)) {
+					const char *v = std::strstr(shutup::utf8::jp::katas, c.second[0].c_str());
+					if ((v - shutup::utf8::jp::katas) != (k - shutup::utf8::jp::hiras)) {
 						return "wrong hira-kana alias setting";
 					}
 				}

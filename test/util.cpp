@@ -73,7 +73,7 @@ extern const char *util_test() {
 				{"＠", false},
 				{"\t@", false},
 			},
-			.checker_ = shutup::utf8::is_kana_string,
+			.checker_ = shutup::utf8::jp::is_kana_string,
 		},
 		{
 			.message_ = "widen_kata test",
@@ -100,7 +100,7 @@ extern const char *util_test() {
 				{"ｶﾟ", "カ", 3, 3},
 				{"ｱﾞ", "ア", 3, 3},
 			},
-			.normalizer_ = shutup::utf8::widen_kata,
+			.normalizer_ = shutup::utf8::jp::widen_kata,
 		},
 		{
 			.message_ = "shrunk_alnum test",
@@ -174,7 +174,7 @@ extern const char *util_test() {
 				{"っっ", "", 6, 0},
 				{"か@", "ka", 3, 2},
 			},
-			.normalizer_ = shutup::utf8::to_hebon_roman,
+			.normalizer_ = shutup::utf8::jp::to_hebon_roman,
 		},
 		{
 			.message_ = "japan_roman test",
@@ -234,7 +234,7 @@ extern const char *util_test() {
 				{"っっ", "", 6, 0},
 				{"か@", "ka", 3, 2},
 			},
-			.normalizer_ = shutup::utf8::to_japan_roman,
+			.normalizer_ = shutup::utf8::jp::to_japan_roman,
 		},
 	};
 	for (auto &c : cases) {

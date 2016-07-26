@@ -41,25 +41,16 @@ static inline int convert(const u8 *in, int ilen, u8 *out, int olen, std::functi
 //
 class utf8 {
 public:
+	//common vars	
 	static const int MAX_BYTE_PER_GRYPH = 6;
-	//string sets	
-	static const char *hiras;
-	static const char *katas;
-	static const char *wide_katas;
-	static const char *wide_psign_katas;
-	static const char *wide_sonant_katas;
 	static const char *alphabets;
 	static const char *upper_alphabets;
 	static const char *wide_lower_alphabets;
 	static const char *wide_upper_alphabets;
 	static const char *numbers;
 	static const char *wide_numbers;
-	static const char *half_katas;
-	static const char *vowels[];
-	static const char *hebon_consonants[];
-	static const char *japan_consonants[];
 	static char work[8];
-	//methods
+	//common methods
 	static inline int peek(const u8 *in, int ilen) {
 		int mask = 0x80, count = 0, bit = in[0];
 		while(bit != 0x00) {
@@ -86,15 +77,28 @@ public:
 		}
 		return n_write;
 	}
-	static bool is_kana_string(const char *str);
-	static int to_hebon_roman(const u8 *in, int ilen, u8 *out, int *olen);
-	static int to_japan_roman(const u8 *in, int ilen, u8 *out, int *olen);
-	static int to_roman(const u8 *in, int ilen, u8 *out, int *olen, bool assimilated, 
-			const char *consonants[], const char *(*consonant_exception)(const char *, int, int, bool));
-	static const char *hebon_consonant_exception(const char *normal, int vowel_index, int consonant_index, bool assimilated);
-	static const char *japan_consonant_exception(const char *normal, int vowel_index, int consonant_index, bool assimilated);
-	static int widen_kata(const u8 *in, int ilen, u8 *out, int *olen);
 	static int norm_space_and_lf(const u8 *in, int ilen, u8 *out, int *olen);
 	static int shrunk_alnum(const u8 *in, int ilen, u8 *out, int *olen);
+	//language specific namespaces
+	class jp {
+	public:
+		static const char *hiras;
+		static const char *katas;
+		static const char *wide_katas;
+		static const char *wide_psign_katas;
+		static const char *wide_sonant_katas;
+		static const char *half_katas;
+		static const char *vowels[];
+		static const char *hebon_consonants[];
+		static const char *japan_consonants[];
+		static bool is_kana_string(const char *str);
+		static int to_hebon_roman(const u8 *in, int ilen, u8 *out, int *olen);
+		static int to_japan_roman(const u8 *in, int ilen, u8 *out, int *olen);
+		static int to_roman(const u8 *in, int ilen, u8 *out, int *olen, bool assimilated, 
+				const char *consonants[], const char *(*consonant_exception)(const char *, int, int, bool));
+		static const char *hebon_consonant_exception(const char *normal, int vowel_index, int consonant_index, bool assimilated);
+		static const char *japan_consonant_exception(const char *normal, int vowel_index, int consonant_index, bool assimilated);
+		static int widen_kata(const u8 *in, int ilen, u8 *out, int *olen);
+	};
 };
 }
