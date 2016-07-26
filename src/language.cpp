@@ -15,6 +15,15 @@ int WordChecker::init() {
 void WordChecker::add_synonym(const char *pattern, Checker &c) {
 	c.add_word(pattern);
 }
+//エイリアスを追加する.
+void WordChecker::add_alias(const char *target, const char *alias) {
+	strvec v{alias};
+	set_alias(target, v);
+}
+//無視する文字列を追加する
+void WordChecker::ignore_glyphs(const char *glyphs) {
+	add_ignore_glyphs(glyphs);
+}
 //normalizeで使うnormalizerを定義する.
 WordChecker::normalizer *WordChecker::normalizers(int *n_norm) {
 	*n_norm = 1;
@@ -22,7 +31,7 @@ WordChecker::normalizer *WordChecker::normalizers(int *n_norm) {
 }
 //マッチングで無視される文字列かどうかを判定する.
 bool WordChecker::ignored(const char *g) { 
-	return std::strstr(ignore_gryphs_, g) != nullptr; 
+	return std::strstr(ignore_glyphs_, g) != nullptr; 
 }
 //文字列のマッチを行う.
 int WordChecker::match(const u8 *in, int ilen, const u8 *pattern, int plen, int *ofs) {
@@ -141,19 +150,19 @@ const WordChecker::strvec &WordChecker::alias_list(const char *key) const {
 		return (*i).second;
 	}
 }
-void WordChecker::add_ignore_gryphs(const char *gryphs, bool reset) { 
+void WordChecker::add_ignore_glyphs(const char *glyphs, bool reset) { 
 	if (reset) {
-		pool().free(ignore_gryphs_);
-		ignore_gryphs_ = nullptr; 
+		pool().free(ignore_glyphs_);
+		ignore_glyphs_ = nullptr; 
 	}
-	if (ignore_gryphs_ == nullptr) {
-		size_t sz = std::strlen(gryphs);
-		ignore_gryphs_ = reinterpret_cast<char *>(pool().malloc(sz + 1));
-		std::strncpy(ignore_gryphs_, gryphs, sz);
+	if (ignore_glyphs_ == nullptr) {
+		size_t sz = std::strlen(glyphs);
+		ignore_glyphs_ = reinterpret_cast<char *>(pool().malloc(sz + 1));
+		std::strncpy(ignore_glyphs_, glyphs, sz);
 	} else {
-		size_t sz = std::strlen(gryphs), osz = std::strlen(ignore_gryphs_);
-		ignore_gryphs_ = reinterpret_cast<char *>(pool().realloc(ignore_gryphs_, osz + sz + 1));
-		std::strncpy(ignore_gryphs_ + osz, gryphs, sz);	
+		size_t sz = std::strlen(glyphs), osz = std::strlen(ignore_glyphs_);
+		ignore_glyphs_ = reinterpret_cast<char *>(pool().realloc(ignore_glyphs_, osz + sz + 1));
+		std::strncpy(ignore_glyphs_ + osz, glyphs, sz);	
 	}
 }
 int WordChecker::remove_ignored(const u8 *in, int ilen, u8 *out, int *olen) {

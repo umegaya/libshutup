@@ -9,7 +9,9 @@ public:
 	virtual int init() = 0;
 	virtual int normalize(const u8 *in, int ilen, u8 *out, int olen) = 0;
 	virtual void add_synonym(const char *pattern, class Checker &c) = 0;
-	virtual bool ignored(const char *gryph) = 0;
+	virtual void add_alias(const char *target, const char *alias) = 0;
+	virtual void ignore_glyphs(const char *glyphs) = 0;
+	virtual bool ignored(const char *glyph) = 0;
 };
 
 class Checker {
@@ -40,10 +42,9 @@ public:
 		pool_(a), checker_(by(lang, pool_)), trie_(checker_, &pool_) {}
 	inline ~Checker() {}
 	void add(const char *s);
-	void add_word(const char *s) { 
-		TRACE("add_word: %s\n", s);
-		trie_.add(s); 
-	}
+	inline void add_word(const char *s) { TRACE("add_word: %s\n", s); trie_.add(s); }
+	inline void add_alias(const char *target, const char *alias) { checker_->add_alias(target, alias); }
+	inline void ignore_glyphs(const char *glyphs) { checker_->ignore_glyphs(glyphs); }
 	inline void remove(const char *s) { trie_.remove(s); }
 	const char *filter(const char *in, char *out, int *olen, const char *mask = "?");
 	bool should_filter(const char *s, char *out, int *olen);

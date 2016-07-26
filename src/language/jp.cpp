@@ -8,7 +8,7 @@
 namespace shutup {
 namespace language {
 //チェックの時、無視する文字達.
-static const char *ignore_glyphs = 
+static const char *ignore_list = 
 "-+!\"#$%%&()*/,:;<=>?@[\\]^_{|}~ "
 "ｰ" //half kata hyphen
 "、。，．・：；？！゛゜´｀¨＾￣＿ヽヾゝゞ〃仝々〆〇ー‐／＼～∥｜…‥"
@@ -19,7 +19,7 @@ static const char *ignore_glyphs =
 
 int JP::init() {
 	//区切り文字として無視される文字を指定する.
-	set_ignore_gryphs(ignore_glyphs);
+	set_ignore_glyphs(ignore_list);
 	//ひらがな、カタカナをそれぞれのaliasとする.
 	size_t hlen = std::strlen(utf8::jp::hiras), klen = std::strlen(utf8::jp::katas);
 	int hidx = 0, kidx = 0;

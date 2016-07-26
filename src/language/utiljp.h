@@ -206,9 +206,9 @@ bool utf8::jp::is_kana_string(const char *str) {
 		if (tmp == 0) {
 			break;
 		}
-		char gryph[tmp + 1];
-		std::memcpy(gryph, str + idx, tmp); gryph[tmp] = 0;
-		if (nullptr == std::strstr(utf8::jp::hiras, gryph) && nullptr == std::strstr(utf8::jp::katas, gryph)) {
+		char glyph[tmp + 1];
+		std::memcpy(glyph, str + idx, tmp); glyph[tmp] = 0;
+		if (nullptr == std::strstr(utf8::jp::hiras, glyph) && nullptr == std::strstr(utf8::jp::katas, glyph)) {
 			return false;
 		}
 		idx += tmp;

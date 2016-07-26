@@ -17,15 +17,15 @@ int Checker::masking(const u8 *in, int ilen, u8 *out, int olen, const char *mask
 		if (tmp == 0) {
 			break;
 		}
-		char gryph[tmp + 1];
-		std::memcpy(gryph, in + iofs, tmp); gryph[tmp] = 0;
-		//TRACE("masking: gryph: %s\n", gryph);
-		if (!checker_->ignored(gryph)) {
+		char glyph[tmp + 1];
+		std::memcpy(glyph, in + iofs, tmp); glyph[tmp] = 0;
+		//TRACE("masking: glyph: %s\n", glyph);
+		if (!checker_->ignored(glyph)) {
 			std::memcpy(out + oofs, mask, mlen);
 			oofs += mlen;
 			iofs += tmp;
 		} else {
-			std::memcpy(out + oofs, gryph, tmp);
+			std::memcpy(out + oofs, glyph, tmp);
 			oofs += tmp;
 			iofs += tmp;
 		}
