@@ -6,10 +6,8 @@ namespace shutup {
 void Checker::add(const char *s) { 
 	int sz = strnlen(s, MAX_FILTER_STRING);
 	u8 buf[sz * utf8::MAX_BYTE_PER_GRYPH];
-	//TRACE("checker::add %s\n", s);
 	int rlen = checker_->normalize(reinterpret_cast<const u8*>(s), sz, buf, sz * utf8::MAX_BYTE_PER_GRYPH);
 	buf[rlen] = 0;
-	//TRACE("checker::aft norm %s\n", buf);
 	checker_->add_synonym(reinterpret_cast<const char *>(buf), *this);
 }
 int Checker::masking(const u8 *in, int ilen, u8 *out, int olen, const char *mask, int mlen) {
@@ -59,6 +57,7 @@ const char *Checker::filter(const char *in, char *out, int *olen, const char *ma
 	return out;
 }
 bool Checker::should_filter(const char *in, char *out, int *olen) {
+	//TRACE("should_filter: :%s\n", in);
 	int rlen = strnlen(in, MAX_FILTER_STRING), rofs = 0;
 	int tmp;
 	const u8 *iptr = reinterpret_cast<const u8 *>(in);

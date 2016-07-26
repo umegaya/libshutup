@@ -15,6 +15,27 @@
 
 namespace shutup {
 //
+//  tpl utils
+//
+namespace util {
+static inline int convert(const u8 *in, int ilen, u8 *out, int olen, std::function<int(const u8*, int, u8*, int*)> conv) {
+	int n_read = 0, n_write = 0, wtmp, rtmp;
+	while (olen > n_write && ilen > n_read) {
+		wtmp = olen - n_write;
+		//TRACE("read_next_with_normalize: %d %d %d %d\n", ilen, olen, n_read, n_write);
+		rtmp = conv(in + n_read, ilen - n_read, out + n_write, &wtmp);
+		if (rtmp < 0) {
+			return rtmp;
+		} else {
+			n_read += rtmp;
+			n_write += wtmp;
+		}
+	}
+	return n_write;
+}
+}
+
+//
 //	utf8 utils
 //
 class utf8 {

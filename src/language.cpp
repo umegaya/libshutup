@@ -46,14 +46,8 @@ NEXT:
 			break; //finish
 		} else if (wtmp == 0) {
 			//glyph just skipped. 
-			if (n_read > 0) {
-				//preceding matched glyph already exists. read next
-				n_read += rtmp;
-				goto NEXT;
-			} else {
-				//first glyph is ignored glyph. start matching next one.
-				break;
-			}
+			n_read += rtmp;
+			goto NEXT;
 		} else {
 			out[wtmp] = 0;
 			int prtmp = utf8::peek(pattern + n_pread, plen - n_pread);
@@ -103,7 +97,10 @@ int WordChecker::read_next_with_normalize(const u8 *in, int ilen, u8 *out, int *
 }
 //文字種を限定するために誤検出の心配がないような文字種の変換を既に行っておく.
 int WordChecker::normalize(const u8 *in, int ilen, u8 *out, int olen) {
-	int n_read = 0, n_write = 0, wtmp, rtmp;
+	return util::convert(in, ilen, out, olen, std::bind(&WordChecker::read_next_with_normalize, this, 
+			std::placeholders::_1, std::placeholders::_2, 
+			std::placeholders::_3, std::placeholders::_4));
+/*	int n_read = 0, n_write = 0, wtmp, rtmp;
 	while (olen > n_write && ilen > n_read) {
 		wtmp = olen - n_write;
 		//TRACE("read_next_with_normalize: %d %d %d %d\n", ilen, olen, n_read, n_write);
@@ -115,7 +112,7 @@ int WordChecker::normalize(const u8 *in, int ilen, u8 *out, int olen) {
 			n_write += wtmp;
 		}
 	}
-	return n_write;
+	return n_write; */
 }
 void WordChecker::set_alias(const char *pattern, strvec &vec) { 
 	auto i = aliases_.find(pattern);

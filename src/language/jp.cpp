@@ -2,6 +2,7 @@
 #include <cstring>
 #include <cstdlib> 
 
+#include "util.h"
 #include "language/jp.h"
 
 namespace shutup {
@@ -53,23 +54,23 @@ WordChecker::normalizer *JP::normalizers(int *n_norm) {
 //ここで単語単位で同じ意味のものを登録する.
 void JP::add_synonym(const char *pattern, Checker &c) {
 	if (utf8::is_kana_string(pattern)) {
-		//ローマ字変換の登録.
-		c.add_word(to_hebon_roman(pattern));
-		c.add_word(to_japan_roman(pattern));
+		//ローマ字変換の登録.まずヘボン式.
+		int ilen = std::strlen(pattern), olen = ilen;
+		const u8 *in = reinterpret_cast<const u8*>(pattern);
+		u8 out[ilen]; 
+		int r = util::convert(in, ilen, out, olen, std::bind(&utf8::to_hebon_roman, 
+				std::placeholders::_1, std::placeholders::_2, 
+				std::placeholders::_3, std::placeholders::_4));
+		out[r] = 0;
+		c.add_word(reinterpret_cast<const char*>(out));
+		//日本式.
+		r = util::convert(in, ilen, out, olen, std::bind(&utf8::to_japan_roman, 
+				std::placeholders::_1, std::placeholders::_2, 
+				std::placeholders::_3, std::placeholders::_4));
+		out[r] = 0;
+		c.add_word(reinterpret_cast<const char*>(out));
 	}
 	c.add_word(pattern);
-}
-const char *JP::to_hebon_roman(const char *str) {
-	u8 buff[256];
-	int blen = 256;
-	utf8::to_hebon_roman(reinterpret_cast<const u8*>(str), std::strlen(str), buff, &blen);
-	return str;
-}
-const char *JP::to_japan_roman(const char *str) {
-	u8 buff[256];
-	int blen = 256;
-	utf8::to_japan_roman(reinterpret_cast<const u8*>(str), std::strlen(str), buff, &blen);
-	return str;
 }
 }
 }

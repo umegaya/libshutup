@@ -264,7 +264,7 @@ static inline int kana_index(const u8 *in, int ilen, int *olen) {
 			return (p - utf8::hiras) / 3;
 		}
 	}
-	TRACE("kana_index error no match: %s\n", in);
+	//TRACE("kana_index error no match: %s\n", in);
 	return -1; //no hira or kata kana.
 }
 

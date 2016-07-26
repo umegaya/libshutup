@@ -40,7 +40,10 @@ public:
 		pool_(a), checker_(by(lang, pool_)), trie_(checker_, &pool_) {}
 	inline ~Checker() {}
 	void add(const char *s);
-	void add_word(const char *s) { trie_.add(s); }
+	void add_word(const char *s) { 
+		TRACE("add_word: %s\n", s);
+		trie_.add(s); 
+	}
 	inline void remove(const char *s) { trie_.remove(s); }
 	const char *filter(const char *in, char *out, int *olen, const char *mask = "?");
 	bool should_filter(const char *s, char *out, int *olen);
