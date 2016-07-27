@@ -190,6 +190,9 @@ Patricia::~Patricia() {
 	root_ = nullptr;
 }
 void Patricia::add_slice(const u8 *b, int l, void *p) {
+	if (l <= 0) {
+		return; //長さ0のバイト列は無視する.
+	}
 	if (p == nullptr) {
 		p = DEFAULT_PARAM_PTR;
 	}

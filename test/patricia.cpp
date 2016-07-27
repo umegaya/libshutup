@@ -328,12 +328,13 @@ extern const char *patricia_test() {
 		},
 		{
 			.message_ = "test practical example",
-			.operations_ = {{"+", "バッドワド", p(1)}, {"+", "badword", p(2)}, {"+", "baddowado", p(3)}},
+			.operations_ = {{"+", "馬津怒輪亜怒", p(4)},{"+", "バッドワド", p(1)}, {"+", "badword", p(2)}, {"+", "baddowado", p(3)}},
 			.expects_ = {
 				{"bad", 1},
 					{"dowado", 2, p(3)},
 					{"word", 2, p(2)},
 				{"バッドワド", 1, p(1)},
+				{"馬津怒輪亜怒", 1, p(4)},
 			},
 			.search_ = {
 				.found = {"badword"}, 
