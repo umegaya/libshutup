@@ -209,3 +209,5 @@ macro (find_host_package)
 	set (CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 endmacro (find_host_package)
 
+# work around for https://forums.developer.apple.com/thread/18316
+set (CMAKE_CXX_ARCHIVE_CREATE "<CMAKE_AR> crs <TARGET> <LINK_FLAGS> <OBJECTS>")
