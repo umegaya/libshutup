@@ -10,9 +10,14 @@ extern "C" {
 		void *(*realloc)(void *, size_t);
 	} shutup_allocator;
 	extern shutter shutup_new(const char *lang, shutup_allocator *a);
+	extern void shutup_delete(shutter s);
 	extern void shutup_set_alias(shutter s, const char *target, const char *alias);
 	extern void shutup_ignore_glyphs(shutter s, const char *glyphs);
 	extern void shutup_add_word(shutter s, const char *word);
-	extern const char *shutup_should_filter(shutter s, const char *text, char *out, int *olen);
-	extern const char *shutup_filter(shutter s, const char *text, char *out, int *olen, const char *mask);
+	extern const char *shutup_should_filter(shutter s, const char *in, int ilen, char *out, int *olen);
+	extern const char *shutup_filter(shutter s, const char *in, int ilen, char *out, int *olen, const char *mask);
+	//for debugging
+	typedef void (*shutup_logger)(const char *);
+	extern void shutup_set_logger(shutup_logger logger);
+	extern void shutup_log(const char *fmt, ...);
 }

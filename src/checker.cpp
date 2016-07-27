@@ -33,43 +33,42 @@ int Checker::masking(const u8 *in, int ilen, u8 *out, int olen, const char *mask
 	out[oofs] = 0;
 	return oofs;
 }
-const char *Checker::filter(const char *in, char *out, int *olen, const char *mask) {
-	int rlen = strnlen(in, MAX_FILTER_STRING), rofs = 0;
+const char *Checker::filter(const char *in, int ilen, char *out, int *olen, const char *mask) {
+	if (mask == nullptr) { mask = "?"; }
+	int iofs = 0;
 	int msz = strnlen(mask, MAX_FILTER_STRING);
-	int wofs = 0, tmp;
+	int oofs = 0, tmp;
 	const u8 *iptr = reinterpret_cast<const u8 *>(in);
 	u8 *optr = reinterpret_cast<u8 *>(out);
-	while (rofs < rlen) {
-		if (trie_.get(iptr + rofs, rlen - rofs, &tmp) != nullptr) {
-			wofs += masking(iptr + rofs, tmp, optr + wofs, *olen - wofs, mask, msz);
-			rofs += tmp;
+	while (iofs < ilen) {
+		if (trie_.get(iptr + iofs, ilen - iofs, &tmp) != nullptr) {
+			oofs += masking(iptr + iofs, tmp, optr + oofs, *olen - oofs, mask, msz);
+			iofs += tmp;
 		} else {
-			tmp = utf8::copy(iptr + rofs, rlen - rofs, optr + wofs, *olen - wofs, 1);
+			tmp = utf8::copy(iptr + iofs, ilen - iofs, optr + oofs, *olen - oofs, 1);
 			if (tmp < 0) {
 				return nullptr; //buf short
 			}
-			wofs += tmp;
-			rofs += tmp;
+			oofs += tmp;
+			iofs += tmp;
 		}
 	}
-	*olen = wofs;
+	*olen = oofs;
 	out[*olen] = 0;
 	return out;
 }
-bool Checker::should_filter(const char *in, char *out, int *olen) {
-	//TRACE("should_filter: :%s\n", in);
-	int rlen = strnlen(in, MAX_FILTER_STRING), rofs = 0;
-	int tmp;
+bool Checker::should_filter(const char *in, int ilen, char *out, int *olen) {
+	int iofs = 0, tmp;
 	const u8 *iptr = reinterpret_cast<const u8 *>(in);
-	while (rofs < rlen) {
-		if (trie_.get(iptr + rofs, rlen - rofs, &tmp) != nullptr) {
+	while (iofs < ilen) {
+		if (trie_.get(iptr + iofs, ilen - iofs, &tmp) != nullptr) {
 			int n_copy = std::min(tmp, *olen - 1);
-			std::strncpy(out, in + rofs, n_copy);
+			std::strncpy(out, in + iofs, n_copy);
 			*olen = n_copy;
 			return true;
 		} else {
-			tmp = utf8::peek(iptr + rofs, rlen - rofs);
-			rofs += tmp;
+			tmp = utf8::peek(iptr + iofs, ilen - iofs);
+			iofs += tmp;
 		}
 	}
 	return false;

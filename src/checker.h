@@ -41,13 +41,14 @@ public:
 	inline Checker(const char *lang, shutup_allocator *a) : 
 		pool_(a), checker_(by(lang, pool_)), trie_(checker_, &pool_) {}
 	inline ~Checker() {}
+	inline bool valid() const { return checker_ != nullptr; }
 	void add(const char *s);
 	inline void add_word(const char *s) { TRACE("add_word: %s\n", s); trie_.add(s); }
 	inline void add_alias(const char *target, const char *alias) { checker_->add_alias(target, alias); }
 	inline void ignore_glyphs(const char *glyphs) { checker_->ignore_glyphs(glyphs); }
 	inline void remove(const char *s) { trie_.remove(s); }
-	const char *filter(const char *in, char *out, int *olen, const char *mask = "?");
-	bool should_filter(const char *s, char *out, int *olen);
+	const char *filter(const char *in, int ilen, char *out, int *olen, const char *mask = nullptr);
+	bool should_filter(const char *in, int ilen, char *out, int *olen);
 public:
 	static IWordChecker *by(const char *lang, Mempool &m);
 };

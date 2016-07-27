@@ -33,7 +33,7 @@ struct testcase {
 			int ilen = std::strlen(i.text_);
 			int olen = ilen * shutup::utf8::MAX_BYTE_PER_GRYPH;
 			char buff[olen];
-			if (i.filtered_ != c.should_filter(i.text_, buff, &olen)) {
+			if (i.filtered_ != c.should_filter(i.text_, std::strlen(i.text_), buff, &olen)) {
 				TRACE("input:[%s]\n", i.text_);
 				return "text should be filtered but actually not";
 			}
@@ -43,7 +43,9 @@ struct testcase {
 				return "filtered but match part does not match expected";
 			}
 			olen = ilen * shutup::utf8::MAX_BYTE_PER_GRYPH;
-			const char *r = mask_ == nullptr ? c.filter(i.text_, buff, &olen) : c.filter(i.text_, buff, &olen, mask_);
+			const char *r = mask_ == nullptr ? 
+				c.filter(i.text_, std::strlen(i.text_), buff, &olen) : 
+				c.filter(i.text_, std::strlen(i.text_), buff, &olen, mask_);
 			if (std::strcmp(i.expect_, r) != 0) {
 				TRACE("filter:[%s] => [%s]\n", i.expect_, r);
 				return "filter result does not match expected";

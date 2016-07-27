@@ -9,7 +9,7 @@
 // macro!!!
 #if defined(TEST) || defined(DEBUG)
 #include <cstdio>
-#define TRACE(...) std::printf(__VA_ARGS__)
+#define TRACE(...) std::fprintf(stderr, __VA_ARGS__)
 #else
 #define TRACE(...)
 #endif
