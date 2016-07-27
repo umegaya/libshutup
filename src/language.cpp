@@ -158,11 +158,11 @@ void WordChecker::add_ignore_glyphs(const char *glyphs, bool reset) {
 	if (ignore_glyphs_ == nullptr) {
 		size_t sz = std::strlen(glyphs);
 		ignore_glyphs_ = reinterpret_cast<char *>(pool().malloc(sz + 1));
-		std::strncpy(ignore_glyphs_, glyphs, sz);
+		std::strncpy(ignore_glyphs_, glyphs, sz + 1);
 	} else {
 		size_t sz = std::strlen(glyphs), osz = std::strlen(ignore_glyphs_);
 		ignore_glyphs_ = reinterpret_cast<char *>(pool().realloc(ignore_glyphs_, osz + sz + 1));
-		std::strncpy(ignore_glyphs_ + osz, glyphs, sz);	
+		std::strncpy(ignore_glyphs_ + osz, glyphs, sz + 1);	
 	}
 }
 int WordChecker::remove_ignored(const u8 *in, int ilen, u8 *out, int *olen) {

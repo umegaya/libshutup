@@ -63,7 +63,7 @@ bool Checker::should_filter(const char *in, int ilen, char *out, int *olen) {
 	while (iofs < ilen) {
 		if (trie_.get(iptr + iofs, ilen - iofs, &tmp) != nullptr) {
 			int n_copy = std::min(tmp, *olen - 1);
-			std::strncpy(out, in + iofs, n_copy);
+			std::strncpy(out, in + iofs, n_copy + 1);
 			*olen = n_copy;
 			return true;
 		} else {
