@@ -21,10 +21,10 @@ void shutup_ignore_glyphs(shutter s, const char *glyphs) {
 		c->ignore_glyphs(glyphs);
 	}
 }
-void shutup_add_word(shutter s, const char *word) {
+void shutup_add_word(shutter s, const char *word, void *ctx) {
 	shutup::Checker *c = reinterpret_cast<shutup::Checker *>(s);
 	if (c->valid()) {
-		c->add(word);
+		c->add(word, ctx);
 	}
 }
 static char *s_buff = nullptr;

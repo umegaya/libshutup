@@ -19,8 +19,8 @@ void WordChecker::fin() {
 }
 //aliasは文字単位での組み合わせを全てチェックしてしまうので、そこまでチェックしたくない場合、
 //ここで単語単位で同じ意味のものを登録する.
-void WordChecker::add_synonym(const char *pattern, Checker &c) {
-	c.add_word(pattern);
+void WordChecker::add_synonym(const char *pattern, Checker &c, void *ctx) {
+	c.add_word(pattern, ctx);
 }
 //文字列のマッチを行う.
 int WordChecker::match(const u8 *in, int ilen, const u8 *pattern, int plen, int *ofs) {

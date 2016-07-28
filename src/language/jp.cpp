@@ -45,7 +45,7 @@ int JP::init() {
 }
 //aliasは文字単位での組み合わせを全てチェックしてしまうので、そこまでチェックしたくない場合、
 //ここで単語単位で同じ意味のものを登録する.
-void JP::add_synonym(const char *pattern, Checker &c) {
+void JP::add_synonym(const char *pattern, Checker &c, void *ctx) {
 	if (utf8::jp::is_kana_string(pattern)) {
 		//ローマ字変換の登録.まずヘボン式.
 		int ilen = std::strlen(pattern), olen = ilen;
@@ -55,13 +55,13 @@ void JP::add_synonym(const char *pattern, Checker &c) {
 				std::placeholders::_1, std::placeholders::_2, 
 				std::placeholders::_3, std::placeholders::_4));
 		out[r] = 0;
-		c.add_word(reinterpret_cast<const char*>(out));
+		c.add_word(reinterpret_cast<const char*>(out), ctx);
 		//日本式.
 		r = util::convert(in, ilen, out, olen, std::bind(&utf8::jp::to_japan_roman, 
 				std::placeholders::_1, std::placeholders::_2, 
 				std::placeholders::_3, std::placeholders::_4));
 		out[r] = 0;
-		c.add_word(reinterpret_cast<const char*>(out));
+		c.add_word(reinterpret_cast<const char*>(out), ctx);
 	}
 }
 }

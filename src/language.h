@@ -40,7 +40,7 @@ public:
 	virtual int init();
 	virtual void fin();
 	virtual int normalize(const u8 *in, int ilen, u8 *out, int olen);
-	virtual void add_synonym(const char *pattern, Checker &c);
+	virtual void add_synonym(const char *pattern, Checker &c, void *ctx);
 	//helpers
 	void ignore_glyphs(const char *glyphs, bool reset = false);
 	bool ignored(const char *g);

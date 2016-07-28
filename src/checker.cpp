@@ -13,13 +13,13 @@ Checker::~Checker() {
 		checker_ = nullptr;
 	}
 }
-void Checker::add(const char *s) { 
+void Checker::add(const char *s, void *ctx) { 
 	int sz = strnlen(s, MAX_FILTER_STRING);
 	u8 buf[sz * utf8::MAX_BYTE_PER_GRYPH];
 	int rlen = checker_->normalize(reinterpret_cast<const u8*>(s), sz, buf, sz * utf8::MAX_BYTE_PER_GRYPH);
 	buf[rlen] = 0;
-	checker_->add_synonym(reinterpret_cast<const char *>(buf), *this);
-	add_word(reinterpret_cast<const char *>(buf));
+	checker_->add_synonym(reinterpret_cast<const char *>(buf), *this, ctx);
+	add_word(reinterpret_cast<const char *>(buf), ctx);
 }
 void Checker::add_alias(const char *target, const char *alias) { 
 	checker_->add_alias(target, alias); 
@@ -74,12 +74,12 @@ const char *Checker::filter(const char *in, int ilen, char *out, int *olen, cons
 	out[*olen] = 0;
 	return out;
 }
-bool Checker::should_filter(const char *in, int ilen, char *out, int *olen) {
+bool Checker::should_filter(const char *in, int ilen, char *out, int *olen, void **pctx) {
 	int iofs = 0, tmp;
 	const u8 *iptr = reinterpret_cast<const u8 *>(in);
 	while (iofs < ilen) {
 
-		if (trie_.get(iptr + iofs, ilen - iofs, &tmp) != nullptr) {
+		if ((*pctx = trie_.get(iptr + iofs, ilen - iofs, &tmp)) != nullptr) {
 			int n_copy = std::min(tmp, *olen - 1);
 			std::strncpy(out, in + iofs, n_copy + 1);
 			*olen = n_copy;
