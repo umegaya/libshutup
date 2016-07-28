@@ -1,4 +1,4 @@
-#include "lib.h"
+#include "shutup.h"
 #include "checker.h"
 
 extern "C" {

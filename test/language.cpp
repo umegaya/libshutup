@@ -20,10 +20,10 @@ struct testcase {
 	std::vector<normalize> normalizes_;
 	const char *test() {
 		shutup::Checker::Mempool *p = new shutup::Checker::Mempool(nullptr);
-		shutup::IWordChecker *wc = shutup::Checker::by(lang_, *p);
+		shutup::language::WordChecker *wc = shutup::Checker::by(lang_, *p);
 		wc->init();
 		if (!alias_tested_) {
-			for (auto &c : reinterpret_cast<shutup::language::WordChecker*>(wc)->aliases()) {
+			for (auto &c : wc->aliases_map()) {
 				const char *k = std::strstr(shutup::utf8::jp::katas, c.first.c_str());
 
 				if (k != nullptr) {

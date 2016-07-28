@@ -3,6 +3,7 @@
 #include <cstdlib> 
 
 #include "util.h"
+#include "checker.h"
 #include "language/jp.h"
 
 namespace shutup {
@@ -19,7 +20,7 @@ static const char *ignore_list =
 
 int JP::init() {
 	//区切り文字として無視される文字を指定する.
-	set_ignore_glyphs(ignore_list);
+	ignore_glyphs(ignore_list);
 	//ひらがな、カタカナをそれぞれのaliasとする.
 	size_t hlen = std::strlen(utf8::jp::hiras), klen = std::strlen(utf8::jp::katas);
 	int hidx = 0, kidx = 0;
@@ -36,19 +37,11 @@ int JP::init() {
 		hidx += htmp;
 		kidx += ktmp;
 	}
-	//TODO: ソとンみたいなのとか、ひらがなの大文字小文字とか.
+	add_alias("ン", "ソ");
+	//normalizerの追加
+	normalizers_.push_back(utf8::jp::widen_kata);
+	normalizers_.push_back(utf8::shrunk_alnum);
 	return 0;
-}
-//normalizeで使うnormalizerを定義する.
-WordChecker::normalizer *JP::normalizers(int *n_norm) {
-	static normalizer norms[3] = {
-		nullptr,
-		utf8::jp::widen_kata,		//try widen kata
-		utf8::shrunk_alnum,	//try shrunk alphabet (half byte lower)
-	};
-	norms[0] = remove_ignored_;
-	*n_norm = (int)(sizeof(norms)/sizeof(norms[0]));
-	return norms;
 }
 //aliasは文字単位での組み合わせを全てチェックしてしまうので、そこまでチェックしたくない場合、
 //ここで単語単位で同じ意味のものを登録する.
@@ -70,7 +63,6 @@ void JP::add_synonym(const char *pattern, Checker &c) {
 		out[r] = 0;
 		c.add_word(reinterpret_cast<const char*>(out));
 	}
-	c.add_word(pattern);
 }
 }
 }

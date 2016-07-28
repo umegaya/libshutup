@@ -2,13 +2,30 @@
 #include "language/jp.h"
 
 namespace shutup {
-
+Checker::Checker(const char *lang, shutup_allocator *a) : 
+	pool_(a), checker_(by(lang, pool_)), trie_(checker_, &pool_) {}
+Checker::Checker(shutup_allocator *a, std::function<language::WordChecker*(Mempool&)> factory) : 
+	pool_(a), checker_(factory(pool_)), trie_(checker_, &pool_) {}
+Checker::~Checker() { 
+	if (checker_ != nullptr) {
+		checker_->fin();
+		pool_.free(checker_);
+		checker_ = nullptr;
+	}
+}
 void Checker::add(const char *s) { 
 	int sz = strnlen(s, MAX_FILTER_STRING);
 	u8 buf[sz * utf8::MAX_BYTE_PER_GRYPH];
 	int rlen = checker_->normalize(reinterpret_cast<const u8*>(s), sz, buf, sz * utf8::MAX_BYTE_PER_GRYPH);
 	buf[rlen] = 0;
 	checker_->add_synonym(reinterpret_cast<const char *>(buf), *this);
+	add_word(reinterpret_cast<const char *>(buf));
+}
+void Checker::add_alias(const char *target, const char *alias) { 
+	checker_->add_alias(target, alias); 
+}
+void Checker::ignore_glyphs(const char *glyphs) { 
+	checker_->ignore_glyphs(glyphs); 
 }
 int Checker::masking(const u8 *in, int ilen, u8 *out, int olen, const char *mask, int mlen) {
 	int iofs = 0, oofs = 0;
@@ -61,6 +78,7 @@ bool Checker::should_filter(const char *in, int ilen, char *out, int *olen) {
 	int iofs = 0, tmp;
 	const u8 *iptr = reinterpret_cast<const u8 *>(in);
 	while (iofs < ilen) {
+
 		if (trie_.get(iptr + iofs, ilen - iofs, &tmp) != nullptr) {
 			int n_copy = std::min(tmp, *olen - 1);
 			std::strncpy(out, in + iofs, n_copy + 1);
@@ -74,8 +92,8 @@ bool Checker::should_filter(const char *in, int ilen, char *out, int *olen) {
 	return false;
 }
 
-IWordChecker *Checker::by(const char *lang, Mempool &p) {
-	IWordChecker *w;
+language::WordChecker *Checker::by(const char *lang, Mempool &p) {
+	language::WordChecker *w;
 	if (std::memcmp(lang, "jp", 2) == 0) {
 		w = new(p.malloc(sizeof(language::JP))) language::JP(&p);
 	} else {

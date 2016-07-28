@@ -1,3 +1,4 @@
+#include "checker.h"
 #include "language.h"
 
 #if defined(DEBUG) || defined(TEST)
@@ -10,28 +11,16 @@ namespace language {
 int WordChecker::init() {
 	return 0;
 }
+//独自のメモリ割当の後処理を行う.
+void WordChecker::fin() {
+	if (ignore_glyphs_ != nullptr) { 
+		pool().free(ignore_glyphs_); 
+	} 
+}
 //aliasは文字単位での組み合わせを全てチェックしてしまうので、そこまでチェックしたくない場合、
 //ここで単語単位で同じ意味のものを登録する.
 void WordChecker::add_synonym(const char *pattern, Checker &c) {
 	c.add_word(pattern);
-}
-//エイリアスを追加する.
-void WordChecker::add_alias(const char *target, const char *alias) {
-	strvec v{alias};
-	set_alias(target, v);
-}
-//無視する文字列を追加する
-void WordChecker::ignore_glyphs(const char *glyphs) {
-	add_ignore_glyphs(glyphs);
-}
-//normalizeで使うnormalizerを定義する.
-WordChecker::normalizer *WordChecker::normalizers(int *n_norm) {
-	*n_norm = 1;
-	return &remove_ignored_;
-}
-//マッチングで無視される文字列かどうかを判定する.
-bool WordChecker::ignored(const char *g) { 
-	return std::strstr(ignore_glyphs_, g) != nullptr; 
 }
 //文字列のマッチを行う.
 int WordChecker::match(const u8 *in, int ilen, const u8 *pattern, int plen, int *ofs) {
@@ -85,10 +74,8 @@ NEXT:
 }
 //次の一文字の正規化を行う.
 int WordChecker::read_next_with_normalize(const u8 *in, int ilen, u8 *out, int *olen) {
-	int tmp, otmp, n_norm;
-	normalizer *norms = normalizers(&n_norm);
-	for (int i = 0; i < n_norm; i++) {
-		auto norm = norms[i];
+	int tmp, otmp;
+	for (auto &norm : normalizers_) {
 		otmp = *olen;
 		tmp = norm(in, ilen, out, &otmp);
 		if (tmp != 0) { 
@@ -109,25 +96,12 @@ int WordChecker::normalize(const u8 *in, int ilen, u8 *out, int olen) {
 	return util::convert(in, ilen, out, olen, std::bind(&WordChecker::read_next_with_normalize, this, 
 			std::placeholders::_1, std::placeholders::_2, 
 			std::placeholders::_3, std::placeholders::_4));
-/*	int n_read = 0, n_write = 0, wtmp, rtmp;
-	while (olen > n_write && ilen > n_read) {
-		wtmp = olen - n_write;
-		//TRACE("read_next_with_normalize: %d %d %d %d\n", ilen, olen, n_read, n_write);
-		rtmp = read_next_with_normalize(in + n_read, ilen - n_read, out + n_write, &wtmp);
-		if (rtmp < 0) {
-			return rtmp;
-		} else {
-			n_read += rtmp;
-			n_write += wtmp;
-		}
-	}
-	return n_write; */
 }
 void WordChecker::set_alias(const char *pattern, strvec &vec) { 
-	auto i = aliases_.find(pattern);
-	if (i == aliases_.end()) {
+	auto i = aliases_map_.find(pattern);
+	if (i == aliases_map_.end()) {
 		vec.push_back(pattern); 
-		aliases_[pattern] = std::move(vec); 
+		aliases_map_[pattern] = std::move(vec); 
 	} else {
 		strvec &v = (*i).second;
 		std::copy(vec.begin(), vec.end(), std::back_inserter(v));
@@ -142,16 +116,22 @@ void WordChecker::link_alias(const char *pattern1, const char *pattern2) {
 	}
 }
 const WordChecker::strvec &WordChecker::alias_list(const char *key) const {
-	auto i = aliases_.find(key);
-	if (i == aliases_.end()) {
+	auto i = aliases_map_.find(key);
+	if (i == aliases_map_.end()) {
 		static strvec empty_list;
 		return empty_list;
 	} else {
 		return (*i).second;
 	}
 }
-void WordChecker::add_ignore_glyphs(const char *glyphs, bool reset) { 
-	if (reset) {
+//エイリアスを追加する.
+void WordChecker::add_alias(const char *target, const char *alias) {
+	strvec v{alias};
+	set_alias(target, v);
+}
+//無視する文字列を追加する
+void WordChecker::ignore_glyphs(const char *glyphs, bool reset) { 
+	if (reset && ignore_glyphs_ != nullptr) {
 		pool().free(ignore_glyphs_);
 		ignore_glyphs_ = nullptr; 
 	}
@@ -164,6 +144,10 @@ void WordChecker::add_ignore_glyphs(const char *glyphs, bool reset) {
 		ignore_glyphs_ = reinterpret_cast<char *>(pool().realloc(ignore_glyphs_, osz + sz + 1));
 		std::strncpy(ignore_glyphs_ + osz, glyphs, sz + 1);	
 	}
+}
+//マッチングで無視される文字列かどうかを判定する.
+bool WordChecker::ignored(const char *g) { 
+	return std::strstr(ignore_glyphs_, g) != nullptr; 
 }
 int WordChecker::remove_ignored(const u8 *in, int ilen, u8 *out, int *olen) {
 	u8 buff[utf8::MAX_BYTE_PER_GRYPH + 1];
