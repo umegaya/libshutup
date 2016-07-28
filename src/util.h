@@ -94,7 +94,7 @@ public:
 		static bool is_kana_string(const char *str);
 		static int to_hebon_roman(const u8 *in, int ilen, u8 *out, int *olen);
 		static int to_japan_roman(const u8 *in, int ilen, u8 *out, int *olen);
-		static int to_roman(const u8 *in, int ilen, u8 *out, int *olen, bool assimilated, 
+		static int to_roman(const u8 *in, int ilen, u8 *out, int *olen, bool assimilated, bool strict_mode, 
 				const char *consonants[], const char *(*consonant_exception)(const char *, int, int, bool));
 		static const char *hebon_consonant_exception(const char *normal, int vowel_index, int consonant_index, bool assimilated);
 		static const char *japan_consonant_exception(const char *normal, int vowel_index, int consonant_index, bool assimilated);

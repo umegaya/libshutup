@@ -240,7 +240,7 @@ static inline int kana_index(const u8 *in, int ilen, int *olen) {
 	return -1; //no hira or kata kana.
 }
 
-int utf8::jp::to_roman(const u8 *in, int ilen, u8 *out, int *olen, bool assimilated, 
+int utf8::jp::to_roman(const u8 *in, int ilen, u8 *out, int *olen, bool assimilated, bool strict_mode,
 	const char *consonants[], const char *(*consonant_exception)(const char *, int, int, bool)) {
 	int tmp, idx = kana_index(in, ilen, &tmp);
 	if (idx < 0) {
@@ -262,7 +262,7 @@ int utf8::jp::to_roman(const u8 *in, int ilen, u8 *out, int *olen, bool assimila
 		//小さな「つ」
 		if (ilen > tmp) {
 			//次の読み出しを行う.
-			return tmp + to_roman(in + tmp, ilen - tmp, out, olen, true, consonants, consonant_exception);
+			return tmp + to_roman(in + tmp, ilen - tmp, out, olen, true, strict_mode, consonants, consonant_exception);
 		} else {
 			//もうバッファがないのでから文字列を返す.
 			*olen = 0;
@@ -274,10 +274,29 @@ int utf8::jp::to_roman(const u8 *in, int ilen, u8 *out, int *olen, bool assimila
 		return tmp;
 	} else if (vowel_index == Vowel::A && consonant_index == Consonant::NN) {
 		//「ん」
-		// TODO: 時々[M]に変換されなければいけないと言っている人もいる.
 		if (*olen < 1) {
 			TRACE("to_roman: buf short2\n");
 			return -1;
+		}
+		int ntmp, nidx = kana_index(in + tmp, ilen - tmp, &ntmp);
+		if (nidx >= 0) {
+			int next_consonant_index = nidx / 5;
+			//b,p,mが次の子音の時のみ、m
+			if (next_consonant_index == Consonant::B || next_consonant_index == Consonant::P || next_consonant_index == Consonant::M) {
+				std::memcpy(out, "m", 1);
+				*olen = 1;
+				return tmp;
+			} else if (strict_mode && (next_consonant_index == Consonant::__A || next_consonant_index == Consonant::Y)) {
+				//撥音の後に母音やヤ行音が来てナ行音と区別できなくなった場合は、間に「’」（アポストロフィ）を挿入する。らしいが,
+				//禁止語句の入力として考えた場合、'を入力するユーザーなんているわけないのでstrict_modeの時だけ.
+				if (*olen < 2) {
+					TRACE("to_roman: buf short2\n");
+					return -1;
+				}
+				std::memcpy(out, "n'", 2);
+				*olen = 2;
+				return tmp;
+			}
 		}
 		std::memcpy(out, "n", 1);
 		*olen = 1;
@@ -423,10 +442,10 @@ const char *utf8::jp::japan_consonant_exception(const char *normal, int vowel_in
 }
 
 int utf8::jp::to_hebon_roman(const u8 *in, int ilen, u8 *out, int *olen) {
-	return to_roman(in, ilen, out, olen, false, hebon_consonants, hebon_consonant_exception);
+	return to_roman(in, ilen, out, olen, false, false, hebon_consonants, hebon_consonant_exception);
 }
 int utf8::jp::to_japan_roman(const u8 *in, int ilen, u8 *out, int *olen) {
-	return to_roman(in, ilen, out, olen, false, japan_consonants, japan_consonant_exception);
+	return to_roman(in, ilen, out, olen, false, false, japan_consonants, japan_consonant_exception);
 }
 int utf8::jp::widen_kata(const u8 *in, int ilen, u8 *out, int *olen) {
 	if (*olen < 3) {
