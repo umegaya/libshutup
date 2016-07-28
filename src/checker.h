@@ -41,7 +41,7 @@ public:
 	inline void add_word(const char *s, void *ctx) { trie_.add(s, ctx); }
 	inline void remove(const char *s) { trie_.remove(s); }
 	const char *filter(const char *in, int ilen, char *out, int *olen, const char *mask = nullptr);
-	bool should_filter(const char *in, int ilen, char *out, int *olen, void **pctx = nullptr);
+	bool should_filter(const char *in, int ilen, int *start, int *count, void **pctx = nullptr);
 public:
 	static language::WordChecker *by(const char *lang, Mempool &m);
 	template <class C> static C *create(Mempool &m) {

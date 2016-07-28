@@ -36,19 +36,23 @@ struct testcase {
 		}
 		for (auto &i : inputs_) {
 			int ilen = std::strlen(i.text_);
-			int olen = ilen * shutup::utf8::MAX_BYTE_PER_GRYPH;
-			char buff[olen];
+			int start, count;
 			void *ctx;
-			if (i.filtered_ != c.should_filter(i.text_, std::strlen(i.text_), buff, &olen, &ctx)) {
+			if (i.filtered_ != c.should_filter(i.text_, std::strlen(i.text_), &start, &count, &ctx)) {
 				TRACE("input:[%s]\n", i.text_);
 				return "text should be filtered but actually not";
 			}
-			buff[olen] = 0;
-			if (i.filtered_ && (std::strcmp(i.matched_, buff) != 0 || ctx != i.ctx_)) {
-				TRACE("filtered:[%s] [%s]\n", i.matched_, buff);
-				return "filtered but match part does not match expected";
+			//TRACE("test[%s]s:%d,c:%d\n", i.text_, start, count);
+			if (i.filtered_) {
+				char buff[count + 1];
+				std::memcpy(buff, i.text_ + start, count); buff[count] = 0;
+				if (std::strcmp(i.matched_, buff) != 0 || ctx != i.ctx_) {
+					TRACE("filtered:[%s] [%s]\n", i.matched_, buff);
+					return "filtered but match part does not match expected";
+				}
 			}
-			olen = ilen * shutup::utf8::MAX_BYTE_PER_GRYPH;
+			int olen = ilen * shutup::utf8::MAX_BYTE_PER_GRYPH;
+			char buff[olen];
 			const char *r = mask_ == nullptr ? 
 				c.filter(i.text_, std::strlen(i.text_), buff, &olen) : 
 				c.filter(i.text_, std::strlen(i.text_), buff, &olen, mask_);

@@ -14,7 +14,7 @@ extern "C" {
 	extern void shutup_set_alias(shutter s, const char *target, const char *alias);
 	extern void shutup_ignore_glyphs(shutter s, const char *glyphs);
 	extern void shutup_add_word(shutter s, const char *word, void *ctx);
-	extern const char *shutup_should_filter(shutter s, const char *in, int ilen, char *out, int *olen);
+	extern void *shutup_should_filter(shutter s, const char *in, int ilen, int *start, int *count);
 	extern const char *shutup_filter(shutter s, const char *in, int ilen, char *out, int *olen, const char *mask);
 	//for debugging
 	typedef void (*shutup_logger)(const char *);

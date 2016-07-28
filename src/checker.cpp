@@ -74,15 +74,12 @@ const char *Checker::filter(const char *in, int ilen, char *out, int *olen, cons
 	out[*olen] = 0;
 	return out;
 }
-bool Checker::should_filter(const char *in, int ilen, char *out, int *olen, void **pctx) {
+bool Checker::should_filter(const char *in, int ilen, int *start, int *count, void **pctx) {
 	int iofs = 0, tmp;
 	const u8 *iptr = reinterpret_cast<const u8 *>(in);
 	while (iofs < ilen) {
-
-		if ((*pctx = trie_.get(iptr + iofs, ilen - iofs, &tmp)) != nullptr) {
-			int n_copy = std::min(tmp, *olen - 1);
-			std::strncpy(out, in + iofs, n_copy + 1);
-			*olen = n_copy;
+		if ((*pctx = trie_.get(iptr + iofs, ilen - iofs, count)) != nullptr) {
+			*start = iofs;
 			return true;
 		} else {
 			tmp = utf8::peek(iptr + iofs, ilen - iofs);
