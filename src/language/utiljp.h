@@ -97,7 +97,7 @@ enum Consonant {
 
 	GY,
 	J,
-	__DY,
+	DY,
 	BY,
 	PY,
 
@@ -181,7 +181,7 @@ const char *utf8::jp::vowels[] =
 const char *utf8::jp::hebon_consonants[] =
 {
 	EMP, "k",  "s",  "t",  "n",  "h",  "m",  "y", "r",  "w", "g",  "z",  "d",  "b",  "p",  "v",  "x", "xy", EMP,
-	EMP, "ky", "sh", "ch", "ny", "hy", "my", EMP, "ry", EMP, "gy", "j",  EMP,  "by", "py", EMP,  //Y_I_
+	EMP, "ky", "sh", "ch", "ny", "hy", "my", EMP, "ry", EMP, "gy", "j",  "dy", "by", "py", EMP,  //Y_I_
 	EMP, EMP,  EMP,  EMP,  EMP,  "fy", EMP,  EMP, EMP,  EMP, EMP,  EMP,  EMP,  EMP,  EMP,  "vy", //Y_U_
 	EMP, EMP,  EMP,  "tj", EMP,  EMP,  EMP,  EMP, EMP,  EMP, EMP,  EMP,  "dj", EMP,  EMP,  EMP,  //Y_E_
 	EMP, "kw", "sw", "ts", "nw", "f",  "mw", EMP, "rw", EMP, "gw", "zw", "dz", "bw", "pw", "v",  //V_U_
@@ -191,7 +191,7 @@ const char *utf8::jp::hebon_consonants[] =
 const char *utf8::jp::japan_consonants[] =
 {
 	EMP, "k",  "s",  "t",  "n",  "h",  "m",  "y", "r",  "w", "g",  "z",  "d",  "b",  "p",  "v",  "x", "xy", EMP,
-	EMP, "ky", "sh", "ty", "ny", "hy", "my", EMP, "ry", EMP, "gy", "j",  EMP,  "by", "py", EMP,  //Y_I_
+	EMP, "ky", "sh", "ty", "ny", "hy", "my", EMP, "ry", EMP, "gy", "j",  "dy", "by", "py", EMP,  //Y_I_
 	EMP, EMP,  EMP,  EMP,  EMP,  "fy", EMP,  EMP, EMP,  EMP, EMP,  EMP,  EMP,  EMP,  EMP,  "vy", //Y_U_
 	EMP, EMP,  EMP,  "tj", EMP,  EMP,  EMP,  EMP, EMP,  EMP, EMP,  EMP,  "dj", EMP,  EMP,  EMP,  //Y_E_
 	EMP, "kw", "sw", "ts", "nw", "f",  "mw", EMP, "rw", EMP, "gw", "zw", "dz", "bw", "pw", "v",  //V_U_
@@ -347,7 +347,8 @@ int utf8::jp::to_roman(const u8 *in, int ilen, u8 *out, int *olen, bool assimila
 				}
 				break;
 			}
-			if (consonant_offset > 0) {
+			//結合可能なconsonantが存在する.
+			if (consonant_offset > 0 && consonants[consonant_index + consonant_offset] != nullptr) {
 				consonant_index += consonant_offset;
 				vowel_index = next_vowel_index;
 				tmp = tmp + ntmp;

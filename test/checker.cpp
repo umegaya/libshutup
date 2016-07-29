@@ -83,6 +83,7 @@ extern const char *checker_test() {
 				{"バッドワード",p(4)},
 				{"ワンド",p(5)},
 				{"ソビエト",p(6)},
+				{"ぢょく",p(7)}
 			},
 			.inputs_ = {
 				{"ＢａdＷorDです", true, "ＢａdＷorD", "???????です", p(1)},
