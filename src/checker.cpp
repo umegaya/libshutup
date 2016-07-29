@@ -15,6 +15,7 @@ Checker::~Checker() {
 }
 void Checker::add(const char *s, void *ctx) { 
 	int sz = strnlen(s, MAX_FILTER_STRING);
+	if (sz <= 0) { return; }
 	u8 buf[sz * utf8::MAX_BYTE_PER_GRYPH];
 	int rlen = checker_->normalize(reinterpret_cast<const u8*>(s), sz, buf, sz * utf8::MAX_BYTE_PER_GRYPH);
 	buf[rlen] = 0;
