@@ -52,15 +52,16 @@ int Checker::masking(const u8 *in, int ilen, u8 *out, int olen, const char *mask
 	out[oofs] = 0;
 	return oofs;
 }
-const char *Checker::filter(const char *in, int ilen, char *out, int *olen, const char *mask) {
+const char *Checker::filter(const char *in, int ilen, char *out, int *olen, const char *mask, ContextChecker checker) {
 	if (mask == nullptr) { mask = "?"; }
 	int iofs = 0;
 	int msz = strnlen(mask, MAX_FILTER_STRING);
 	int oofs = 0, tmp;
+	void *ctx;
 	const u8 *iptr = reinterpret_cast<const u8 *>(in);
 	u8 *optr = reinterpret_cast<u8 *>(out);
 	while (iofs < ilen) {
-		if (trie_.get(iptr + iofs, ilen - iofs, &tmp) != nullptr) {
+		if ((ctx = trie_.get(iptr + iofs, ilen - iofs, &tmp)) != nullptr && checker(in, ilen, iofs, tmp, ctx)) {
 			oofs += masking(iptr + iofs, tmp, optr + oofs, *olen - oofs, mask, msz);
 			iofs += tmp;
 		} else {
@@ -76,12 +77,14 @@ const char *Checker::filter(const char *in, int ilen, char *out, int *olen, cons
 	out[*olen] = 0;
 	return out;
 }
-bool Checker::should_filter(const char *in, int ilen, int *start, int *count, void **pctx) {
+bool Checker::should_filter(const char *in, int ilen, int *start, int *count, void **pctx, ContextChecker checker) {
 	int iofs = 0, tmp;
+	void *ctx;
 	const u8 *iptr = reinterpret_cast<const u8 *>(in);
 	while (iofs < ilen) {
-		if ((*pctx = trie_.get(iptr + iofs, ilen - iofs, count)) != nullptr) {
+		if ((ctx = trie_.get(iptr + iofs, ilen - iofs, count)) != nullptr && checker(in, ilen, iofs, *count, ctx)) {
 			*start = iofs;
+			*pctx = ctx;
 			return true;
 		} else {
 			tmp = utf8::peek(iptr + iofs, ilen - iofs);

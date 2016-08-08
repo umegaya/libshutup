@@ -14,6 +14,7 @@ struct testcase {
 		const char *matched_;
 		const char *expect_;
 		void *ctx_;
+		bool (*checker_)(const char *in, int ilen, int start, int count, void *ctx);
 	};
 	struct filter {
 		const char *text_;
@@ -36,9 +37,10 @@ struct testcase {
 		}
 		for (auto &i : inputs_) {
 			int ilen = std::strlen(i.text_);
+			auto checker = (i.checker_ == nullptr ? shutup::Checker::truer : i.checker_); 
 			int start, count;
 			void *ctx;
-			if (i.filtered_ != c.should_filter(i.text_, std::strlen(i.text_), &start, &count, &ctx)) {
+			if (i.filtered_ != c.should_filter(i.text_, std::strlen(i.text_), &start, &count, &ctx, checker)) {
 				TRACE("input:[%s]\n", i.text_);
 				return "text should be filtered but actually not";
 			}
@@ -47,15 +49,15 @@ struct testcase {
 				char buff[count + 1];
 				std::memcpy(buff, i.text_ + start, count); buff[count] = 0;
 				if (std::strcmp(i.matched_, buff) != 0 || ctx != i.ctx_) {
-					TRACE("filtered:[%s] [%s]\n", i.matched_, buff);
+					TRACE("filtered:[%s] [%s] %p %p\n", i.matched_, buff, ctx, i.ctx_);
 					return "filtered but match part does not match expected";
 				}
 			}
 			int olen = ilen * shutup::utf8::MAX_BYTE_PER_GRYPH;
 			char buff[olen];
 			const char *r = mask_ == nullptr ? 
-				c.filter(i.text_, std::strlen(i.text_), buff, &olen) : 
-				c.filter(i.text_, std::strlen(i.text_), buff, &olen, mask_);
+				c.filter(i.text_, std::strlen(i.text_), buff, &olen, nullptr, checker) : 
+				c.filter(i.text_, std::strlen(i.text_), buff, &olen, mask_, checker);
 			if (std::strcmp(i.expect_, r) != 0) {
 				TRACE("filter:[%s] => [%s]\n", i.expect_, r);
 				return "filter result does not match expected";
@@ -69,6 +71,30 @@ struct testcase {
 
 static void *p(int id) {
 	return reinterpret_cast<void *>(id);
+}
+static bool p3_is_forward_match(const char *in, int ilen, int start, int count, void *ctx) {
+	if (ctx == p(3)) {
+		if (start == 0) {
+			return true;
+		}
+	}
+	return false;
+}
+static bool p3_is_backward_match(const char *in, int ilen, int start, int count, void *ctx) {
+	if (ctx == p(3)) {
+		if ((start + count) == ilen) {
+			return true;
+		}
+	}
+	return false;
+}
+static bool p3_is_exact_match(const char *in, int ilen, int start, int count, void *ctx) {
+	if (ctx == p(3)) {
+		if (start == 0 && count == ilen) {
+			return true;
+		}
+	}
+	return false;
 }
 
 extern const char *checker_test() {
@@ -102,6 +128,26 @@ extern const char *checker_test() {
 					p(1),
 				},
 				{"OK：「ンビエト」、NG：「ワソド」", true, "：「ワソド", "OK：「ンビエト」、NG：「???」", p(5)},
+
+				{"これは馬津怒輪亜怒ですか", false, "", "これは馬津怒輪亜怒ですか", nullptr, p3_is_exact_match},
+				{"これは馬津怒輪亜怒ですか", false, "", "これは馬津怒輪亜怒ですか", nullptr, p3_is_backward_match},
+				{"これは馬津怒輪亜怒ですか", false, "", "これは馬津怒輪亜怒ですか", nullptr, p3_is_forward_match},
+				{"これは馬津怒輪亜怒ですか", true, "馬津怒輪亜怒", "これは??????ですか", p(3)},
+				
+				{"馬津怒輪亜怒ですか", false, "", "馬津怒輪亜怒ですか", nullptr, p3_is_exact_match},
+				{"馬津怒輪亜怒ですか", false, "", "馬津怒輪亜怒ですか", nullptr, p3_is_backward_match},
+				{"馬津怒輪亜怒ですか", true, "馬津怒輪亜怒", "??????ですか", p(3), p3_is_forward_match},
+				{"馬津怒輪亜怒ですか", true, "馬津怒輪亜怒", "??????ですか", p(3)},
+				
+				{"これは馬津怒輪亜怒", false, "", "これは馬津怒輪亜怒", nullptr, p3_is_exact_match},
+				{"これは馬津怒輪亜怒", true, "馬津怒輪亜怒", "これは??????", p(3), p3_is_backward_match},
+				{"これは馬津怒輪亜怒", false, "", "これは馬津怒輪亜怒", nullptr, p3_is_forward_match},
+				{"これは馬津怒輪亜怒", true, "馬津怒輪亜怒", "これは??????", p(3)},
+				
+				{"馬津怒輪亜怒", true, "馬津怒輪亜怒", "??????", p(3), p3_is_exact_match},
+				{"馬津怒輪亜怒", true, "馬津怒輪亜怒", "??????", p(3), p3_is_backward_match},
+				{"馬津怒輪亜怒", true, "馬津怒輪亜怒", "??????", p(3), p3_is_forward_match},
+				{"馬津怒輪亜怒", true, "馬津怒輪亜怒", "??????", p(3)},
 			},
 		},
 	};

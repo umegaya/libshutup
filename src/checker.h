@@ -10,6 +10,7 @@ class WordChecker;
 class Checker {
 public:
 	typedef shutup_allocator Allocator;
+	typedef std::function<bool(const char *,int,int,int,void *)> ContextChecker; 
 	static const int MAX_FILTER_STRING = 1024 * 1024;//1M
 	class Mempool : public IMempool {
 		Allocator alloc_;
@@ -42,8 +43,9 @@ public:
 	void ignore_glyphs(const char *glyphs);
 	inline void add_word(const char *s, void *ctx) { trie_.add(s, ctx); }
 	inline void remove(const char *s) { trie_.remove(s); }
-	const char *filter(const char *in, int ilen, char *out, int *olen, const char *mask = nullptr);
-	bool should_filter(const char *in, int ilen, int *start, int *count, void **pctx = nullptr);
+	static bool truer(const char *in, int ilen, int start, int count, void *ctx) { return true; }
+	const char *filter(const char *in, int ilen, char *out, int *olen, const char *mask = nullptr, ContextChecker checker = truer);
+	bool should_filter(const char *in, int ilen, int *start, int *count, void **pctx = nullptr, ContextChecker checker = truer);
 public:
 	static language::WordChecker *by(const char *lang, Mempool &m);
 	template <class C> static C *new_word_checker(Mempool &m) {

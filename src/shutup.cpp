@@ -28,14 +28,15 @@ void shutup_add_word(shutter s, const char *word, void *ctx) {
 		c->add(word, ctx);
 	}
 }
-void *shutup_should_filter(shutter s, const char *in, int ilen, int *start, int *count) {
+void *shutup_should_filter(shutter s, const char *in, int ilen, int *start, int *count, 
+	shutup_context_checker checker) {
 	void *p;
 	shutup::Checker *c = reinterpret_cast<shutup::Checker *>(s);
 	if (!c->valid()) {
 		*start = -1;
 		return nullptr;
 	}
-	if (c->should_filter(in, ilen, start, count, &p)) {
+	if (c->should_filter(in, ilen, start, count, &p, checker)) {
 		//shutup_log("should filter: length: %d [%s]\n", *olen, out);
 		return p;
 	}
@@ -54,7 +55,8 @@ static char *allocate(int *size) {
 	*size = s_buff_size;
 	return s_buff;
 }
-const char *shutup_filter(shutter s, const char *in, int ilen, char *out, int *olen, const char *mask) {
+const char *shutup_filter(shutter s, const char *in, int ilen, char *out, int *olen, const char *mask, 
+	shutup_context_checker checker) {
 	int tmp;
 	shutup::Checker *c = reinterpret_cast<shutup::Checker *>(s);
 	if (!c->valid()) {
@@ -69,7 +71,7 @@ const char *shutup_filter(shutter s, const char *in, int ilen, char *out, int *o
 			return nullptr;
 		}
 	}
-	if (c->filter(in, ilen, out, olen, mask) != nullptr) {
+	if (c->filter(in, ilen, out, olen, mask, checker) != nullptr) {
 		out[*olen] = 0;
 		return reinterpret_cast<const char *>(out);
 	}
