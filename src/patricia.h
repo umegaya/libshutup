@@ -36,13 +36,14 @@ class Patricia {
 		void dump() const;
 		//inlines
 		inline void free(allocator<Node*> &a) { 
-			operator delete(this, this);
+			delete this;
 			a.pool().free(this);
 		}
 		inline bool terminal() const { return param_ != nullptr; }
 		inline bool root() const { return parent_ == nullptr; }
 		static inline void *operator new(std::size_t, void *buf) { return buf; }
 		static inline void operator delete(void *p, void *buf) {}
+		static inline void operator delete(void *p) {}
 		static inline Node *new_node(allocator<Node*> &a, Node *parent, const u8 *b, int l, void *param) {
 			return new(a.pool().malloc(sizeof(Node) + l)) Node(a, parent, b, l, param);
 		}

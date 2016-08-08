@@ -6,16 +6,15 @@ for English readme. go to [here](https://github.com/umegaya/libshutup/README.md)
 - 辞書に登録した単語を、表記の揺れを考慮しつつマッチングします, 例えば日本語(JP)モードにおいて、 "badword" は以下をブロックします。
   - "BａDworD" (大文字小文字、全角半角文字の違いを無視)
   - "b　a(d)w-o-r-d" (間に挟まった記号を無視)
-- それに加えて、日本語 "バッドワード" は以下もブロックします。
+- それに加えて、日本語 "バッドワード" は以下のようなパターンもブロックします。
   - "ﾊﾞｯﾄﾞﾜｰﾄﾞ" (半角カナ)
   - "ばっどわーど" (ひらがな)
   - "ﾊﾞｯドわーﾄﾞ" (文字種の混合)
-  - "baddo wa-do" (ローマ字)
-- 拡張されたPatricia木により、メモリおよび実行効率の良いマッチングができます。
-- C++バージョンのライブラリはすべてのメモリをアロケーター経由で割り当てることができます。
-- 適用範囲のことなる3つのレイヤーの組み合わせによってフレキシブルな禁止語句のマッチングが可能です。これにより他の言語についても有効なブロック処理を比較的簡単に構築可能です。
-  - normalize
-    - ignore
+  - "baddo wa-do" (ローマ字表記：ヘボン式、日本式)
+- 拡張されたPatricia木により、フレキシブルでありながら、メモリおよび実行効率の良いマッチングができます。
+- ゲームなどのメモリ管理が厳しいアプリケーション向けに、C++バージョンのライブラリはすべてのメモリをアロケーター経由で割り当てることができます。
+- 適用範囲のことなる3つのレイヤーの組み合わせによって多様な方法で禁止語句のマッチングが可能です。これにより他の言語についても有効なブロック処理を比較的簡単に構築可能です。
+  - normalize (specialなケースとしてのignore)
   - alias
   - synonym
 
@@ -24,7 +23,7 @@ for English readme. go to [here](https://github.com/umegaya/libshutup/README.md)
 - Android
 - OSX (bundle)
 
-## インストール
+## ビルド
 ```
 git clone https://github.com/umegaya/libshutup
 cd libshutup
@@ -39,12 +38,20 @@ make lib # osx static library (may work in linux)
 #include "checker.h"
 
 int main(int argc, char *argv[]) {
+  //スタック上、あるいはクラスのメンバ変数として作成する場合
 	shutup::Checker c(
 		"jp", /* 組み込みの日本語向け禁止文字チェックルーチンを利用する。 */
-		nullptr/* 標準のmalloc,free,reallocを使う、もしくはshutup_allocatorのポインタを指定することでカスタムアロケーターを利用する. */
+		nullptr/* 標準のmalloc,free,reallocを使う */
 	);
+
+  //アロケーターを与える場合
+  shutup::Allocator a = { my_malloc, my_free, my_realloc };
+  shutup::Checker *pc = shutup::Checker::create("jp", &a);
+
+  //辞書の登録
 	c.add("アイウエオ");
 	c.add("abc");
+
 	assert(c.should_filter("a-B-c"));
 	assert(c.should_filter("あいうえお"));
 	assert(!c.should_filter("bbc"));
@@ -101,8 +108,13 @@ int main(int argc, char *argv[]) {
 class MyWordChecker : public shutup::language::WordChecker {
 	//implementations...
 }
-//MyWordCheckerを使うcheckerを生成する.
-shutup::Checker c(nullptr, &shutup::Checker::create<MyWordChecker>);
+
+//MyWordCheckerを使うcheckerをスタック上に生成する.
+shutup::Checker c(nullptr, &shutup::Checker::new_word_checker<MyWordChecker>);
+
+//アロケーターを使ってpointerを割り当てる.
+shutup::Allocator a = { my_malloc, my_free, my_realloc };
+shutup::Checker *c = shutup::Checker::create<MyWordChecker>(&a);
 ```
 
 ### 変更可能な実装
@@ -125,24 +137,43 @@ shutup::Checker c(nullptr, &shutup::Checker::create<MyWordChecker>);
     - 最終的にoutに書き込まれたバイト数を返してください。
   - int match(const u8 *in, int ilen, const u8 *pattern, int plen, int *ofs)
     - これをoverrideすることで、patricia木を実際にトラバースする時に、ノードに含まれる文字列(pattern, plen)と入力(in, ilen)が一致するかのチェックをそのまま置き換えることができます。
-    - ofsには入力の何バイト目までマッチしたかを返し、戻り値としてpatternの何倍と目までマッチしたかを返します。
+    - ofsには入力の何バイト目までマッチしたかを返し、戻り値としてpatternの何バイト目までマッチしたかを返します。
 
+## 独自のメモリアロケーターの使用
+- 標準のメモリ割当関数 malloc, free, realloc と同じインターフェイスの関数を与えることでメモリの割当をカスタマイズすることができます。
+- shutup::Checker自体をアロケーターで割り当てるかどうかで若干初期化と終了のコードが異なります。
 
+### shutup::Checkerのインスタンス自体をアロケーターを使って割り当てない場合
+```
+//組み込みチェッカーの初期化
+shutup::Checker c1("jp", nullptr);
+shutup::Checker *pc1 = new shutup::Checker("jp", nullptr);
 
+//カスタマイズされたチェッカーの初期化
+shutup::Checker c2(nullptr, &shutup::Checker::new_word_checker<MyWordChecker>);
+shutup::Checker *pc2 = new shutup::Checker(nullptr, &shutup::Checker::new_word_checker<MyWordChecker>);
 
+//解放
+delete pc1;
+delete pc2;
+//c1, c2の形式はスコープを外れる、ないし親クラスの開放時に自動的に解放される
+```
 
+### shutup::Checkerのインスタンス自体をアロケーターを使って割り当てる場合
+```
+//アロケーターの宣言
+shutup::Allocator a = { my_malloc, my_free, my_realloc };
 
+//組み込みチェッカーの初期化
+shutup::Checker *pc1 = new shutup::Checker::create("jp", &a);
 
+//カスタマイズされたチェッカーの初期化
+shutup::Checker *pc2 = new shutup::Checker::create<MyWordChecker>(&a);
 
-
-
-
-
-
-
-
-
-
+//解放
+shutup::Checker::destroy(pc1);
+shutup::Checker::destroy(pc2);
+```
 
 
 

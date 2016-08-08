@@ -2,14 +2,15 @@
 #include "language/jp.h"
 
 namespace shutup {
-Checker::Checker(const char *lang, shutup_allocator *a) : 
+Checker::Checker(const char *lang, Allocator *a) : 
 	pool_(a), checker_(by(lang, pool_)), trie_(checker_, &pool_) {}
-Checker::Checker(shutup_allocator *a, std::function<language::WordChecker*(Mempool&)> factory) : 
+Checker::Checker(Allocator *a, std::function<language::WordChecker*(Mempool&)> factory) : 
 	pool_(a), checker_(factory(pool_)), trie_(checker_, &pool_) {}
 Checker::~Checker() { 
 	if (checker_ != nullptr) {
 		checker_->fin();
-		pool_.free(checker_);
+		delete checker_; //to call destrcutor. operator delete overridden not to free memory
+		pool_.free(checker_); //freeing memory actually done in here.
 		checker_ = nullptr;
 	}
 }

@@ -101,7 +101,7 @@ void WordChecker::set_alias(const char *pattern, strvec &vec) {
 	auto i = aliases_map_.find(pattern);
 	if (i == aliases_map_.end()) {
 		vec.push_back(pattern); 
-		aliases_map_[pattern] = std::move(vec); 
+		aliases_map_.emplace(pattern, std::move(vec));
 	} else {
 		strvec &v = (*i).second;
 		std::copy(vec.begin(), vec.end(), std::back_inserter(v));

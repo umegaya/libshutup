@@ -3,11 +3,12 @@
 
 extern "C" {
 shutter shutup_new(const char *lang, shutup_allocator *a) {
-	return reinterpret_cast<void *>(new shutup::Checker(lang, a));
+	return a == nullptr ? 
+		reinterpret_cast<void *>(new shutup::Checker(lang, a)) : 
+		shutup::Checker::create(lang, a);
 }
 void shutup_delete(shutter s) {
-	shutup::Checker *c = reinterpret_cast<shutup::Checker *>(s);
-	delete c;	
+	shutup::Checker::destroy(reinterpret_cast<shutup::Checker *>(s));
 }
 void shutup_set_alias(shutter s, const char *target, const char *alias) {
 	shutup::Checker *c = reinterpret_cast<shutup::Checker *>(s);
