@@ -36,7 +36,10 @@ void *shutup_should_filter(shutter s, const char *in, int ilen, int *start, int 
 		*start = -1;
 		return nullptr;
 	}
-	if (c->should_filter(in, ilen, start, count, &p, checker)) {
+	bool filtered = (checker == nullptr ? 
+		c->should_filter(in, ilen, start, count, &p) : 
+		c->should_filter(in, ilen, start, count, &p, checker));
+	if (filtered) {
 		//shutup_log("should filter: length: %d [%s]\n", *olen, out);
 		return p;
 	}
@@ -71,7 +74,10 @@ const char *shutup_filter(shutter s, const char *in, int ilen, char *out, int *o
 			return nullptr;
 		}
 	}
-	if (c->filter(in, ilen, out, olen, mask, checker) != nullptr) {
+	const char *ctx = (checker == nullptr ? 
+		c->filter(in, ilen, out, olen, mask) : 
+		c->filter(in, ilen, out, olen, mask, checker));
+	if (ctx != nullptr) {
 		out[*olen] = 0;
 		return reinterpret_cast<const char *>(out);
 	}
