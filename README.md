@@ -1,6 +1,6 @@
 # libshutup (v0.1.0)
 c++ library for blocking improper words in sentence, which has large orthographical variants like Japanese.
-日本語のReadmeは[こちら](https://github.com/umegaya/libshutup/README.jp.md)
+日本語のReadmeは[こちら](https://github.com/umegaya/libshutup/blob/master/README.jp.md)
 
 ## Highlights
 - searching registered word pattern in dictionary from input, with large orthographical variants.
