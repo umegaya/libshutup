@@ -1,4 +1,4 @@
-# libshutup
+# libshutup (v0.1.0)
 libshutupは日本語のように、同じ意味の言葉を色々なやり方で記述できる言語における禁止語句のブロックを効率的に行うためにデザインされたC++で書かれたライブラリです.
 for English readme. go to [here](https://github.com/umegaya/libshutup/README.md)
 
