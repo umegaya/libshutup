@@ -111,13 +111,13 @@ make lib # osx static library (may work in linux)
 - we have built in functionality to specify normalize group which equates with empty string, and call it "ignored"
 - in JP mode, following characters are ignored.
   ```
-  "-+!\"#$%%&()*/,:;<=>?@[\\]^_{|}~ "
-  "ｰ" //half kata hyphen
-  "、。，．・：；？！゛゜´｀¨＾￣＿ヽヾゝゞ〃仝々〆〇ー‐／＼～∥｜…‥"
-  "‘’“”（）〔〕［］｛｝〈〉《》「」『』【】＋－±×÷＝≠＜＞≦≧∞∴"
-  "♂♀°′″℃￥＄￠￡％＃＆＊＠§☆★○●◎◇◆□■△▲▽▼※〒→←↑↓"
-  "〓∈∋⊆⊇⊂⊃∪∩∧∨￢⇒⇔∀∃∠⊥⌒∂∇≡≒≪≫√∽∝∵∫∬Å‰♯♭"
-  "♪†‡¶◯〝〟≒≡∫∮√⊥∠∵∩∪　"
+  -+!\"#$%%&()*/,:;<=>?@[\\]^_{|}~ 
+  ｰ
+  、。，．・：；？！゛゜´｀¨＾￣＿ヽヾゝゞ〃仝々〆〇ー‐／＼～∥｜…‥
+  ‘’“”（）〔〕［］｛｝〈〉《》「」『』【】＋－±×÷＝≠＜＞≦≧∞∴
+  ♂♀°′″℃￥＄￠￡％＃＆＊＠§☆★○●◎◇◆□■△▲▽▼※〒→←↑↓
+  〓∈∋⊆⊇⊂⊃∪∩∧∨￢⇒⇔∀∃∠⊥⌒∂∇≡≒≪≫√∽∝∵∫∬Å‰♯♭
+  ♪†‡¶◯〝〟≒≡∫∮√⊥∠∵∩∪　  
   ```
 
 ### alias
@@ -160,23 +160,23 @@ make lib # osx static library (may work in linux)
 
 ### Overrid-able implementation
 - basic implementation
-  - _int init()_
+  - *_int init()_*
     - called when WordChecker is initialized
     - mainly configure alias, ignore, normalize settings, described in "Under the food of word checker: 4 abstraction layers"
       - for alias, ignore, call shutup::language::WordChecker::link_alias, set_alias, ignore_glyphs.
       - for normalize, call normalizer_.push_back to add built in normalizers and customs.
-  - _void fin()_
+  - *_void fin()_*
     - free resources if you allocate them in init()
     - for calling link_alias, set_alias, ignore_glyph, and normalizer_.push_back, no need to write clean up code.
-  - _void add_synonym(const char *pattern, Checker &c)_
+  - *_void add_synonym(const char *pattern, Checker &c)_*
     - configure synonym. 
     - pattern is given improper word entry. if there is synonym of it, please add it by using c.add_word call.
 - low level implementation
-  - _int normalize(const u8 *in, int ilen, u8 *out, int olen)_
+  - *_int normalize(const u8 *in, int ilen, u8 *out, int olen)_*
     - you can replace entire normalize implementation by overriding this function.
     - in, ilen is received strings. if there is a character which can be normalized to other string, write converted result to out, olen.
     - returns bytes count written in out.
-  - _int match(const u8 *in, int ilen, const u8 *pattern, int plen, int *ofs)_
+  - *_int match(const u8 *in, int ilen, const u8 *pattern, int plen, int *ofs)_*
     - you can replace entire matching routine which checks how many bytes count matches between (pattern, plen) and (in, ilen), when traversing Patricia trie.
     - write bytes count read for (in, ilen) to *ofs, and returns how many bytes count read for (pattern, plen). 
 
@@ -185,7 +185,7 @@ make lib # osx static library (may work in linux)
 - code is slightly different whether allocating shutup::Checker instance by custom allocator, or not.
 
 ### allocate shutup::Checker instance without using custom allocator
-```
+``` C++
 //declare custom allocator
 shutup::Allocator a = { my_malloc, my_free, my_realloc };
 
@@ -204,7 +204,7 @@ delete pc2;
 ```
 
 ### allocate shutup::Checker instance using custom allocator
-```
+``` C++
 //declare custom allocator
 shutup::Allocator a = { my_malloc, my_free, my_realloc };
 
