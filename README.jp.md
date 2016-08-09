@@ -11,17 +11,18 @@ for English readme. go to [here](https://github.com/umegaya/libshutup/README.md)
   - "ばっどわーど" (ひらがな)
   - "ﾊﾞｯドわーﾄﾞ" (文字種の混合)
   - "baddo wa-do" (ローマ字表記：ヘボン式、日本式)
-- 拡張されたPatricia木により、フレキシブルでありながら、メモリおよび実行効率の良いマッチングができます。
+- 拡張されたPatricia木により、高いカスタマイズ性を持ちながら、メモリおよび実行効率の良いマッチングができます。
 - ゲームなどのメモリ管理が厳しいアプリケーション向けに、C++バージョンのライブラリはすべてのメモリをアロケーター経由で割り当てることができます。
-- 適用範囲のことなる3つのレイヤーの組み合わせによって多様な方法で禁止語句のマッチングが可能です。これにより他の言語についても有効なブロック処理を比較的簡単に構築可能です。
+- 適用範囲のことなる4つのレイヤーの組み合わせによって多様な方法で禁止語句のマッチングが可能です。これにより他の言語についても有効なブロック処理を比較的簡単に構築できます。
   - normalize (specialなケースとしてのignore)
   - alias
   - synonym
+  - context
 
 ## プラットフォーム
 - iOS
 - Android
-- OSX (bundle)
+- OSX (bundle or static lib)
 
 ## ビルド
 ```
@@ -33,31 +34,64 @@ make bundle # osx bundle
 make lib # osx static library (may work in linux)
 ```
 
-## 使い方
-``` C++
-#include "checker.h"
+## 基本的な使い方
 
-int main(int argc, char *argv[]) {
-  //スタック上、あるいはクラスのメンバ変数として作成する場合
-	shutup::Checker c(
-		"jp", /* 組み込みの日本語向け禁止文字チェックルーチンを利用する。 */
-		nullptr/* 標準のmalloc,free,reallocを使う */
-	);
+- C++
+  ``` C++
+  #include "checker.h"
 
-  //アロケーターを与える場合
-  shutup::Allocator a = { my_malloc, my_free, my_realloc };
-  shutup::Checker *pc = shutup::Checker::create("jp", &a);
+  int main(int argc, char *argv[]) {
+    //スタック上、あるいはクラスのメンバ変数としてチェッカーオブジェクトを作成する場合
+  	shutup::Checker c(
+  		"jp", /* 組み込みの日本語向け禁止文字チェックルーチンを利用する。 */
+  		nullptr/* 標準のmalloc,free,reallocを使う */
+  	);
 
-  //辞書の登録
-	c.add("アイウエオ");
-	c.add("abc");
+    //アロケーターを与える場合
+    shutup::Checker::Allocator a = { my_malloc, my_free, my_realloc };
+    shutup::Checker c2 = shutup::Checker("jp", &a);
 
-	assert(c.should_filter("a-B-c"));
-	assert(c.should_filter("あいうえお"));
-	assert(!c.should_filter("bbc"));
-	assert(!c.should_filter("あいうえこ"));
-}
-```
+    //辞書の登録
+  	c.add("アイウエオ");
+    word_context *pctx = new word_context(OnlyForName);
+  	c.add("abc", pctx); //語句に紐付いたコンテクストを与える場合.
+
+    //チェック
+    int start, count;
+    void *ctx;
+  	assert(c.should_filter("a-B-c", 5, &start, &count, &ctx) && ctx == pctx);
+  	assert(c.should_filter("あいうえお", 15, &start, &count));
+  	assert(!c.should_filter("bbc", 3, &start, &count));
+  	assert(!c.should_filter("あいうえこ", 15, &start, &count));
+  }
+  ```
+
+- C
+  ``` C
+  #include "shutup.h"
+
+  int main(int argc, char *argv[]) {
+    //標準のメモリ割当ルーチンを利用してチェッカーオブジェクトを作成する.
+    shutter s = shutup_new("jp", NULL);
+
+    //アロケーターを与える場合
+    shutup_allocator a = { my_malloc, my_free, my_realloc };
+    shutter s2 = shutup_new("jp", &a);
+
+    //辞書の登録
+    shutup_add_word("アイウエオ", NULL);
+    word_context *pctx = malloc(sizeof(word_context));
+    pctx->kind = OnlyForName;
+    shutup_add_word("abc", pctx);//語句に紐付いたコンテクストを与える場合.
+
+    //チェック
+    int start, count;
+    assert(shutup_should_filter(s, "a-B-c", 5, &start, &count) == pctx);
+    assert(shutup_should_filter(s, "あいうえお", 15, &start, &count));
+    assert(!shutup_should_filter(s, "bbc", 3, &start, &count));
+    assert(!shutup_should_filter(s, "あいうえこ", 15, &start, &count));
+  }
+  ```
 
 ## 禁止語句マッチングの仕組み
 - libshutupは文字列の同一性を判定するための幾つかの抽象的な機能を用意し、その組み合わせによって任意の禁止語句のブロックの仕様を実現するようにしています。
@@ -74,15 +108,15 @@ int main(int argc, char *argv[]) {
 - 例えば[badword]に対して[b a d w o r d]のように空白を含んでも人間は意味を解釈することができてしまうため、こういった文字として認識されない文字は取り除いてからマッチングを行わないといくらでもフィルターを抜けられてしまいます。
 - そのため、空文字列に同一視される文字のグループを組み込みで設定できるようにしており、これをignoreと呼んでいます。
 - JPモードにおいては以下のように設定されています。
-```
-"-+!\"#$%%&()*/,:;<=>?@[\\]^_{|}~ "
-"ｰ" //half kata hyphen
-"、。，．・：；？！゛゜´｀¨＾￣＿ヽヾゝゞ〃仝々〆〇ー‐／＼～∥｜…‥"
-"‘’“”（）〔〕［］｛｝〈〉《》「」『』【】＋－±×÷＝≠＜＞≦≧∞∴"
-"♂♀°′″℃￥＄￠￡％＃＆＊＠§☆★○●◎◇◆□■△▲▽▼※〒→←↑↓"
-"〓∈∋⊆⊇⊂⊃∪∩∧∨￢⇒⇔∀∃∠⊥⌒∂∇≡≒≪≫√∽∝∵∫∬Å‰♯♭"
-"♪†‡¶◯〝〟≒≡∫∮√⊥∠∵∩∪　"
-```
+  ```
+  "-+!\"#$%%&()*/,:;<=>?@[\\]^_{|}~ "
+  "ｰ" //half kata hyphen
+  "、。，．・：；？！゛゜´｀¨＾￣＿ヽヾゝゞ〃仝々〆〇ー‐／＼～∥｜…‥"
+  "‘’“”（）〔〕［］｛｝〈〉《》「」『』【】＋－±×÷＝≠＜＞≦≧∞∴"
+  "♂♀°′″℃￥＄￠￡％＃＆＊＠§☆★○●◎◇◆□■△▲▽▼※〒→←↑↓"
+  "〓∈∋⊆⊇⊂⊃∪∩∧∨￢⇒⇔∀∃∠⊥⌒∂∇≡≒≪≫√∽∝∵∫∬Å‰♯♭"
+  "♪†‡¶◯〝〟≒≡∫∮√⊥∠∵∩∪　"
+  ```
 
 ### alias: 別名
 - normalizeの同一視は文字列すべてに適用されてしまうので、予測できない誤マッチングが多くなりがちだと考えられます。例えば、ソ(そ)とン(ん)などのように、あらゆる場所で一致させると問題がある一方で、一部の単語を記述する際には頻繁に置き換えて使われる（神聖なgithubには書けませんが）文字もあります。
@@ -100,6 +134,11 @@ int main(int argc, char *argv[]) {
 - 本来は単語がひらがな、カタカナからなる場合にのみ、全体をローマ字に変換したものも一緒にブロックするようにしたいわけです。synonymはいわば単語単位でのaliasを設定することによりそのような要求にこたえます。
 - JPモードにおいては、入力文字列がひらがな、カタカナのみからなる場合にそれをローマ字（ヘボン式、日本式）に変換した文字列も同様に禁止対象として追加しています。
 
+### context: コンテクスト
+- 上記３つはどのような状況においても、指定された語句が出現する限りマッチします。しかし例えばアプリケーションによっては、特定の語句は特定のシチューエーションで入力された時のみ禁止語句としたい、とか、出現箇所が先頭あるいは末尾の時のみマッチしたい、といったマッチする条件が単純なパターンの存在ではないケースがあります。こう言った要望に１つ１つライブラリ側で応えていくことは、実装の複雑化やコードサイズの肥大化をもたらし、あまり良い考え方とは言えません。そこでlibshutupはcontextと呼ばれるアプリーケーション定義の情報を禁止したい語句に紐付け、さらに禁止語句への単純なマッチが発生した際にコンテクストとマッチ位置を受け取るコールバックを設定できるようにすることでこう言った要望に対応できるようにしています。
+- 詳しくはbindings/Unity/Shutup.csで前方一致、後方一致、完全一致などを実装していますのでそれをご覧ください。
+
+
 ## 独自のチェック機構の実装
 - shutup::language::WordCheckerを継承して実装を変更することで独自のチェックを追加できます。
 - 具体例はjp.cppを参照してください。
@@ -112,7 +151,7 @@ class MyWordChecker : public shutup::language::WordChecker {
 //MyWordCheckerを使うcheckerをスタック上に生成する.
 shutup::Checker c(nullptr, &shutup::Checker::new_word_checker<MyWordChecker>);
 
-//アロケーターを使ってpointerを割り当てる.
+//MyWordCheckerを使い、さらにアロケーターを使ってpointerを割り当てる.
 shutup::Allocator a = { my_malloc, my_free, my_realloc };
 shutup::Checker *c = shutup::Checker::create<MyWordChecker>(&a);
 ```
@@ -174,7 +213,3 @@ shutup::Checker *pc2 = new shutup::Checker::create<MyWordChecker>(&a);
 shutup::Checker::destroy(pc1);
 shutup::Checker::destroy(pc2);
 ```
-
-
-
-

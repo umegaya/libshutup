@@ -84,7 +84,7 @@ bool Checker::should_filter(const char *in, int ilen, int *start, int *count, vo
 	while (iofs < ilen) {
 		if ((ctx = trie_.get(iptr + iofs, ilen - iofs, count)) != nullptr && checker(in, ilen, iofs, *count, ctx)) {
 			*start = iofs;
-			*pctx = ctx;
+			if (pctx != nullptr) { *pctx = ctx; }
 			return true;
 		} else {
 			tmp = utf8::peek(iptr + iofs, ilen - iofs);
