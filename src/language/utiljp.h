@@ -200,9 +200,9 @@ const char *utf8::jp::japan_consonants[] =
 
 bool utf8::jp::is_kana_string(const char *str) {
 	size_t len = std::strlen(str);
-	int idx = 0;
+	size_t idx = 0;
 	while (len > idx) {
-		int tmp = peek(reinterpret_cast<const u8 *>(str + idx), len - idx);
+		int tmp = peek(reinterpret_cast<const u8 *>(str + idx), (int)(len - idx));
 		if (tmp == 0) {
 			break;
 		}
@@ -227,13 +227,13 @@ static inline int kana_index(const u8 *in, int ilen, int *olen) {
 	const char *p = std::strstr(utf8::jp::katas, reinterpret_cast<const char *>(buff));
 	if (p != nullptr) {
 		*olen = r;
-		return (p - utf8::jp::katas) / 3;
+		return (int)(p - utf8::jp::katas) / 3;
 	} else {
 		p = std::strstr(utf8::jp::hiras, reinterpret_cast<const char *>(buff));
 		if (p != nullptr) {
 			//TRACE("kana_index: match hira: %s %lu\n", p, p - utf8::jp::hiras);
 			*olen = r;
-			return (p - utf8::jp::hiras) / 3;
+			return (int)(p - utf8::jp::hiras) / 3;
 		}
 	}
 	//TRACE("kana_index error no match: %s\n", in);
@@ -357,7 +357,7 @@ int utf8::jp::to_roman(const u8 *in, int ilen, u8 *out, int *olen, bool assimila
 			//読み出すバッファがもうない.
 		}
 		const char *c = consonant_exception(consonants[consonant_index], vowel_index, consonant_index, assimilated);
-		int clen = std::strlen(c);
+		int clen = (int)std::strlen(c);
 		int total_len = 1 + clen;
 		//TRACE("store last result %d %d %s %d %d %d\n", vowel_index, consonant_index, c, *olen, clen, total_len);
 		if (*olen < total_len) {

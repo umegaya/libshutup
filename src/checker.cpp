@@ -15,7 +15,7 @@ Checker::~Checker() {
 	}
 }
 void Checker::add(const char *s, void *ctx) { 
-	int sz = strnlen(s, MAX_FILTER_STRING);
+	int sz = (int)strnlen(s, MAX_FILTER_STRING);
 	if (sz <= 0) { return; }
 	u8 buf[sz * utf8::MAX_BYTE_PER_GRYPH];
 	int rlen = checker_->normalize(reinterpret_cast<const u8*>(s), sz, buf, sz * utf8::MAX_BYTE_PER_GRYPH);
@@ -29,6 +29,7 @@ void Checker::add_alias(const char *target, const char *alias) {
 void Checker::ignore_glyphs(const char *glyphs) { 
 	checker_->ignore_glyphs(glyphs); 
 }
+bool Checker::truer(const char *in, int ilen, int start, int count, void *ctx) { return true; }
 int Checker::masking(const u8 *in, int ilen, u8 *out, int olen, const char *mask, int mlen) {
 	int iofs = 0, oofs = 0;
 	while (ilen > iofs && olen > oofs) {
@@ -55,7 +56,7 @@ int Checker::masking(const u8 *in, int ilen, u8 *out, int olen, const char *mask
 const char *Checker::filter(const char *in, int ilen, char *out, int *olen, const char *mask, ContextChecker checker) {
 	if (mask == nullptr) { mask = "?"; }
 	int iofs = 0;
-	int msz = strnlen(mask, MAX_FILTER_STRING);
+	int msz = (int)strnlen(mask, MAX_FILTER_STRING);
 	int oofs = 0, tmp;
 	void *ctx;
 	const u8 *iptr = reinterpret_cast<const u8 *>(in);

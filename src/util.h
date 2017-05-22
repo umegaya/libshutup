@@ -7,11 +7,13 @@
 #include "types.h"
 
 // macro!!!
+#if !defined(TRACE)
 #if defined(TEST) || defined(DEBUG)
 #include <cstdio>
 #define TRACE(...) std::fprintf(stderr, __VA_ARGS__)
 #else
 #define TRACE(...)
+#endif
 #endif
 
 namespace shutup {

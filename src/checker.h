@@ -43,7 +43,7 @@ public:
 	void ignore_glyphs(const char *glyphs);
 	inline void add_word(const char *s, void *ctx) { trie_.add(s, ctx); }
 	inline void remove(const char *s) { trie_.remove(s); }
-	static bool truer(const char *in, int ilen, int start, int count, void *ctx) { return true; }
+    static bool truer(const char *in, int ilen, int start, int count, void *ctx);
 	const char *filter(const char *in, int ilen, char *out, int *olen, const char *mask = nullptr, ContextChecker checker = truer);
 	bool should_filter(const char *in, int ilen, int *start, int *count, void **pctx = nullptr, ContextChecker checker = truer);
 public:
@@ -68,5 +68,8 @@ public:
 	static inline void *operator new(std::size_t, void *buf) { return buf; }
 	static inline void operator delete(void *p, void *buf) {}
 	static inline void operator delete( void *p ) { std::free(p); }
+#if defined(DEBUG)
+    void dump() { trie_.dump(); }
+#endif
 };
 }

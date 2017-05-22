@@ -51,7 +51,7 @@ NEXT:
 			int prtmp = utf8::peek(pattern + n_pread, plen - n_pread);
 			std::memcpy(pout, pattern + n_pread, prtmp);
 			pout[prtmp] = 0;
-			auto al = alias_list(reinterpret_cast<const char *>(pout));
+			const auto &al = alias_list(reinterpret_cast<const char *>(pout));
 			//TRACE("check with alias: pick %s %s %lu\n", out, pout, al.size());
 			if (al.size() > 0) {
 				for (auto &a : al) {
@@ -69,6 +69,15 @@ NEXT:
 			break;
 		}
 	}
+    // 最長一致するために、無視される文字が続いていればそれも読んでしまう
+    while (n_read < ilen) {
+        int wtmp = utf8::MAX_BYTE_PER_GRYPH;
+        int rtmp = read_next_with_normalize(in + n_read, ilen - n_read, out, &wtmp);
+        if (rtmp == 0 || wtmp > 0) { //文字列の終端か、無視されない正規化文字.
+            break;
+        }
+        n_read += rtmp;
+    }
 	*ofs = n_read;
 	return n_pread;
 }
@@ -97,11 +106,12 @@ int WordChecker::normalize(const u8 *in, int ilen, u8 *out, int olen) {
 			std::placeholders::_1, std::placeholders::_2, 
 			std::placeholders::_3, std::placeholders::_4));
 }
-void WordChecker::set_alias(const char *pattern, strvec &vec) { 
-	auto i = aliases_map_.find(pattern);
+void WordChecker::set_alias(const char *pattern, strvec &vec) {
+    str s(pattern, pool());
+    const auto &i = aliases_map_.find(s);
 	if (i == aliases_map_.end()) {
-		vec.push_back(pattern); 
-		aliases_map_.emplace(pattern, std::move(vec));
+		vec.push_back(s);
+        aliases_map_.emplace(s, vec);
 	} else {
 		strvec &v = (*i).second;
 		std::copy(vec.begin(), vec.end(), std::back_inserter(v));
@@ -109,24 +119,24 @@ void WordChecker::set_alias(const char *pattern, strvec &vec) {
 }
 void WordChecker::link_alias(const char *pattern1, const char *pattern2) {
 	if (std::strcmp(pattern1, pattern2) != 0) {
-		strvec v1(pstr_alloc_); v1.push_back(pattern1);
-		strvec v2(pstr_alloc_); v2.push_back(pattern2);
+		strvec v1(pstr_alloc_); v1.push_back(str(pattern1, pool()));
+		strvec v2(pstr_alloc_); v2.push_back(str(pattern2, pool()));
 		set_alias(pattern1, v2);
 		set_alias(pattern2, v1);
 	}
 }
 const WordChecker::strvec &WordChecker::alias_list(const char *key) const {
-	auto i = aliases_map_.find(key);
+	const auto &i = aliases_map_.find(str(key, pool()));
 	if (i == aliases_map_.end()) {
-		static strvec empty_list;
-		return empty_list;
+		return empty_list_;
 	} else {
 		return (*i).second;
 	}
 }
 //エイリアスを追加する.
 void WordChecker::add_alias(const char *target, const char *alias) {
-	strvec v{alias};
+    strvec v(pool());
+    v.push_back(str(alias, pool()));
 	set_alias(target, v);
 }
 //無視する文字列を追加する

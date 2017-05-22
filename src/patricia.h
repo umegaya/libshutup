@@ -37,7 +37,7 @@ class Patricia {
 		//inlines
 		inline void free(allocator<Node*> &a) { 
 			delete this;
-			a.pool().free(this);
+			a.free(this);
 		}
 		inline bool terminal() const { return param_ != nullptr; }
 		inline bool root() const { return parent_ == nullptr; }
@@ -45,10 +45,10 @@ class Patricia {
 		static inline void operator delete(void *p, void *buf) {}
 		static inline void operator delete(void *p) {}
 		static inline Node *new_node(allocator<Node*> &a, Node *parent, const u8 *b, int l, void *param) {
-			return new(a.pool().malloc(sizeof(Node) + l)) Node(a, parent, b, l, param);
+			return new(a.malloc(sizeof(Node) + l)) Node(a, parent, b, l, param);
 		}
 		static inline Node *new_root(allocator<Node*> &a) {
-			return new(a.pool().malloc(sizeof(Node))) Node(a);
+			return new(a.malloc(sizeof(Node))) Node(a);
 		}
 	};
 public:
@@ -63,10 +63,10 @@ public:
 	void remove_slice(const u8 *b, int l);
 	void *get(const u8 *b, int l, int *ofs);
 	//inlines
-	inline void add(const char *s, void *p = nullptr) { add_slice(reinterpret_cast<const u8*>(s), std::strlen(s), p); }
-	inline void remove(const char *s) { remove_slice(reinterpret_cast<const u8*>(s), std::strlen(s)); }
-	inline bool contains(const char *s, int *ofs) { return get(reinterpret_cast<const u8*>(s), std::strlen(s), ofs) != nullptr; }
-	inline void *get(const char *s, int *ofs) { return get(reinterpret_cast<const u8*>(s), std::strlen(s), ofs); }
+	inline void add(const char *s, void *p = nullptr) { add_slice(reinterpret_cast<const u8*>(s), (int)std::strlen(s), p); }
+	inline void remove(const char *s) { remove_slice(reinterpret_cast<const u8*>(s), (int)std::strlen(s)); }
+	inline bool contains(const char *s, int *ofs) { return get(reinterpret_cast<const u8*>(s), (int)std::strlen(s), ofs) != nullptr; }
+	inline void *get(const char *s, int *ofs) { return get(reinterpret_cast<const u8*>(s), (int)std::strlen(s), ofs); }
 	void dump() const;
 protected:
 	Node *find_node(const u8 *b, int l, int *ofs);

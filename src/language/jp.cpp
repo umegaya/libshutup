@@ -4,13 +4,13 @@
 
 #include "util.h"
 #include "checker.h"
-#include "language/jp.h"
+#include "jp.h"
 
 namespace shutup {
 namespace language {
 //チェックの時、無視する文字達.
 static const char *ignore_list = 
-"-+!\"#$%%&()*/,:;<=>?@[\\]^_{|}~ "
+".-\"#$%%&()*/,:;<=>?@[\\]^_{|}~ "
 "ｰ" //half kata hyphen
 "、。，．・：；？！゛゜´｀¨＾￣＿ヽヾゝゞ〃仝々〆〇ー‐／＼～∥｜…‥"
 "‘’“”（）〔〕［］｛｝〈〉《》「」『』【】＋－±×÷＝≠＜＞≦≧∞∴"
@@ -25,8 +25,8 @@ int JP::init() {
 	size_t hlen = std::strlen(utf8::jp::hiras), klen = std::strlen(utf8::jp::katas);
 	int hidx = 0, kidx = 0;
 	while (kidx < klen && hidx < hlen) {
-		int htmp = utf8::peek(reinterpret_cast<const u8 *>(utf8::jp::hiras + hidx), hlen - hidx);
-		int ktmp = utf8::peek(reinterpret_cast<const u8 *>(utf8::jp::katas + kidx), klen - kidx);
+		int htmp = utf8::peek(reinterpret_cast<const u8 *>(utf8::jp::hiras + hidx), (int)hlen - hidx);
+		int ktmp = utf8::peek(reinterpret_cast<const u8 *>(utf8::jp::katas + kidx), (int)klen - kidx);
 		if (htmp == 0 || ktmp == 0) {
 			break;
 		}
@@ -48,7 +48,7 @@ int JP::init() {
 void JP::add_synonym(const char *pattern, Checker &c, void *ctx) {
 	if (utf8::jp::is_kana_string(pattern)) {
 		//ローマ字変換の登録.まずヘボン式.
-		int ilen = std::strlen(pattern), olen = ilen;
+		int ilen = (int)std::strlen(pattern), olen = ilen;
 		const u8 *in = reinterpret_cast<const u8*>(pattern);
 		u8 out[ilen]; 
 		int r = util::convert(in, ilen, out, olen, std::bind(&utf8::jp::to_hebon_roman, 
